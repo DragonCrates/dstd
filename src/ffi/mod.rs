@@ -13,6 +13,7 @@ crate::block! {
     pub(crate) type BOOL = u8;
     pub(crate) type ULONG = c_ulong;
     pub(crate) type ULONG_PTR = usize;
+    pub(crate) type SHORT = c_short;
     pub(crate) type WORD = c_ushort;
     pub(crate) type DWORD = ULONG;
     pub(crate) type DWORD_PTR = ULONG_PTR;
@@ -33,13 +34,14 @@ crate::block! {
     pub(crate) type errno_t = c_int;
 
     pub(crate) type HANDLE = PVOID;
+    pub(crate) type HWND = *mut c_void;
     pub(crate) type SOCKET = UINT_PTR;
+
+    pub(crate) const INVALID_HANDLE_VALUE: HANDLE = usize::MAX as HANDLE; // -1
 
     // not used
     pub(crate) type LPOVERLAPPED = *mut c_void;
     pub(crate) type LPSECURITY_ATTRIBUTES = *mut c_void;
-
-    pub(crate) const INVALID_HANDLE_VALUE: HANDLE = usize::MAX as HANDLE; // -1
 }
 
 mod os_str;

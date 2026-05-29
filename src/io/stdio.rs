@@ -16,7 +16,7 @@ crate::cfg_if! {
         // #define STD_OUTPUT_HANDLE ((DWORD)-11)
         const STDOUT: DWORD = u32::MAX-10;
         // #define STD_ERROR_HANDLE ((DWORD)-12)
-        const STDERR: DWORD = u32::MAX-11;
+        pub(crate) const STDERR: DWORD = u32::MAX-11;
         type StdioType = DWORD;
     }
 }
@@ -24,11 +24,11 @@ crate::cfg_if! {
 #[cfg(windows)]
 unsafe extern "C" {
     /// Retrieves a handle to the specified standard device (standard input, standard output, or standard error).
-    fn GetStdHandle(nStdHandle: DWORD) -> HANDLE;
+    pub(crate) fn GetStdHandle(nStdHandle: DWORD) -> HANDLE;
     /// Retrieves the current input mode of a console's input buffer or the current output mode of a console screen buffer.
     fn GetConsoleMode(hConsoleHandle: HANDLE, lpMode: LPDWORD) -> BOOL;
     /// Maps a character string to a UTF-16 (wide character) string.
-    fn MultiByteToWideChar(
+    pub(crate) fn MultiByteToWideChar(
         /* [in] */ CodePage: UINT,
         /* [in] */ dwFlags: DWORD,
         /* [in] */ lpMultiByteStr: LPCCH,
