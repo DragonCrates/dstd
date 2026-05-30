@@ -22,8 +22,7 @@ mod lazylock;
 pub use lazylock::LazyLock;
 
 extern crate alloc;
-/// Re-export from [`alloc`]
-///
+#[doc(no_inline)]
 pub use alloc::sync::Arc;
 
 // TODO condvar, SmallFutex, mpsc

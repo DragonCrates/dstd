@@ -1,3 +1,5 @@
+//! Networking primitives for TCP/UDP communication
+
 use core::net::SocketAddr;
 use core::mem;
 use core::ffi::c_int;
@@ -7,28 +9,27 @@ use crate::io::{Read, Write, Result, Error};
 mod sys;
 use sys::*;
 
+/// Alias for an OS-dependent socket handle
 pub use sys::Socket;
 
 // TODO:
 // - as raw fd
 // - set nonblocking
-// - docs
 // - getaddrinfo
 
 #[cfg(windows)]
-crate::block! {
+fn init() {
     use crate::sync::Once;
-
     static WSA_INITIALIZED: Once = Once::new();
-    fn init() {
-        WSA_INITIALIZED.call_once(|| unsafe {
-            let mut data: WSADATA = mem::zeroed();
-            if WSAStartup(0x0202, &mut data as LPWSADATA) != 0 {
-                panic!("WinSock initialization failed");
-            }
-        });
-    }
+
+    WSA_INITIALIZED.call_once(|| unsafe {
+        let mut data: WSADATA = mem::zeroed();
+        if WSAStartup(0x0202, &mut data) != 0 {
+            panic!("WinSock initialization failed");
+        }
+    });
 }
+
 #[cfg(unix)]
 fn init() {}
 
@@ -39,12 +40,13 @@ fn sockerror() -> Error {
     return Error::from_raw_os_error(unsafe { WSAGetLastError() as crate::io::ErrorOs })
 }
 
+/// A TCP socket server, listening for connections
 pub struct TcpListener {
     handle: Socket,
 }
 
 impl TcpListener {
-    /// TODO doc
+    /// Creates a new TcpListener which will be bound to the specified address
     pub fn bind(addr: SocketAddr) -> Result<TcpListener> {
         init();
 
@@ -62,10 +64,11 @@ impl TcpListener {
         }
     }
 
+    /// Accept a new incoming connection from this listener
     pub fn accept(&self) -> Result<(TcpStream, SocketAddr)> {
         let mut addr = sockaddr::default();
         let mut addrlen = mem::size_of::<sockaddr>() as socklen_t;
-        let handle = unsafe { accept(self.handle, &mut addr as *mut sockaddr, &mut addrlen as *mut socklen_t) };
+        let handle = unsafe { accept(self.handle, &mut addr, &mut addrlen) };
         if handle == INVALID_SOCKET { return Err(sockerror()); }
         Ok((TcpStream { handle }, SocketAddr::from_sockaddr(addr)))
     }
@@ -82,6 +85,8 @@ impl Drop for TcpListener {
     }
 }
 
+/// A TCP stream between a local and a remote socket
+// TODO: peek, shutdown, connect, AsHandle, FromHandle
 pub struct TcpStream {
     handle: Socket,
 }
@@ -101,3 +106,5 @@ impl Write for TcpStream {
         Ok(ret as usize)
     }
 }
+
+// TODO: gethostname
