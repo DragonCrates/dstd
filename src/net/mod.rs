@@ -1,6 +1,5 @@
 //! Networking primitives for TCP/UDP communication
 
-use core::net::SocketAddr;
 use core::mem;
 use core::ffi::c_int;
 
@@ -11,6 +10,9 @@ use sys::*;
 
 /// Alias for an OS-dependent socket handle
 pub use sys::Socket;
+
+#[doc(no_inline)]
+pub use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, IpAddr, Ipv4Addr, Ipv6Addr, AddrParseError};
 
 // TODO:
 // - as raw fd

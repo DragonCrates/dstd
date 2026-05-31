@@ -40,8 +40,8 @@ pub struct Instant(LARGE_INTEGER);
 
 impl Instant {
     pub fn now() -> Instant {
-        let mut li = 0;
-        unsafe { QueryPerformanceCounter(&mut li as *mut LARGE_INTEGER); }
+        let mut li: LARGE_INTEGER = 0;
+        unsafe { QueryPerformanceCounter(&mut li); }
         Instant(li)
     }
 

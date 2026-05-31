@@ -43,7 +43,7 @@ impl OsStr {
 
     /// Constructs a new `OsStr` from a given slice, checking that a slice is valid
     pub fn new(slice: &[OsChar]) -> Result<&OsStr, OsStrError> {
-        if slice.is_empty() { return Err(OsStrError::SliceEmpty); }
+        if slice.is_empty() { return Err(OsStrError::NotTerminated); }
         let last = slice.len() - 1;
         if slice[last] != 0 { return Err(OsStrError::NotTerminated); }
         for &c in &slice[..last] {
@@ -145,18 +145,18 @@ impl fmt::Debug for OsStr {
     }
 }
 
+/// Error returned by [`OsStr::new`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
 pub enum OsStrError {
-    SliceEmpty,
+    /// C string is not null terminated
     NotTerminated,
+    /// C string has zeroes before null terminator
     HasZeroes
 }
 
 impl fmt::Display for OsStrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            OsStrError::SliceEmpty => f.write_str("empty slice"),
             OsStrError::NotTerminated => f.write_str("c string is not null terminated"),
             OsStrError::HasZeroes => f.write_str("c string has zeroes before null terminator"),
         }
@@ -165,10 +165,12 @@ impl fmt::Display for OsStrError {
 
 impl Error for OsStrError {}
 
+/// Error returned by [`OsStr::to_utf8`]
 #[derive(Debug)]
-#[non_exhaustive]
 pub enum OsUtf8Error {
+    /// Utf-8 conversion error
     Utf8(FromUtf8Error),
+    /// Utf-16 conversion error
     Utf16(FromUtf16Error),
 }
 
@@ -195,36 +197,34 @@ impl fmt::Display for OsUtf8Error {
 
 impl Error for OsUtf8Error {}
 
-/// Constructs a new OsStr reference by copying into a provided buffer
+/// Constructs a new OsStr reference by using a stack buffer
 ///
 /// If buffer size was not enough, it allocates and returns `Cow::Owned`
-#[allow(clippy::int_plus_one)]
-#[inline]
-pub fn str_to_os<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
+pub(crate) fn str_to_os<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
     #[cfg(unix)]
-    let len = s.len();
+    let len = s.len()+1;
     #[cfg(windows)]
-    let len = s.encode_utf16().count();
+    let len = s.encode_utf16().count()+1;
 
     #[cfg(unix)]
     let fill = |buf: &mut [u8]| {
-        buf[..len].copy_from_slice(s.as_bytes());
-        buf[len] = 0;
+        buf[..len-1].copy_from_slice(s.as_bytes());
+        buf[len-1] = 0;
     };
     #[cfg(windows)]
     let fill = |buf: &mut [u16]| {
         for (i, c) in s.encode_utf16().enumerate() {
             buf[i] = c;
         }
-        buf[len] = 0;
+        buf[len-1] = 0;
     };
 
-    if len+1 <= buf.len() {
+    if buf.len() >= len {
         fill(buf);
-        let os_str = OsStr::new(&buf[..len+1])?;
+        let os_str = OsStr::new(&buf[..len])?;
         Ok(Cow::Borrowed(os_str))
     } else {
-        let mut buf = vec![0; len+1];
+        let mut buf = vec![0; len];
         fill(&mut buf);
         let os_string = OsString::new(buf)?;
         Ok(Cow::Owned(os_string))

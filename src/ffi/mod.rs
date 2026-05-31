@@ -1,10 +1,15 @@
+//! Utilities related to FFI bindings
+
 #![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
-pub(crate) use core::ffi::*;
+#[doc(no_inline)]
+pub use core::ffi::*;
 
 #[cfg(unix)]
 crate::block! {
+    #[allow(hidden_glob_reexports)]
     pub(crate) type c_ssize_t = isize;
+    #[allow(hidden_glob_reexports)]
     pub(crate) type c_size_t = usize;
 }
 

@@ -2,10 +2,10 @@
 //! Re-exports from [`alloc`] and [`dstd`](crate) that match the prelude of original std
 
 mod ambiguous_macros_only {
+    #![allow(hidden_glob_reexports)]
     extern crate alloc;
 
     // This is to import the vec macro without importing the module. Example taken from std...
-    #[expect(hidden_glob_reexports)]
     mod vec {}
 
     pub use alloc::*;

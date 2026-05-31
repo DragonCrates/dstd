@@ -5,16 +5,23 @@ use core::fmt::{self, Debug};
 
 use super::Futex;
 
+/// Mutex primitive, used to protect shared data
 pub struct Mutex<T> {
     futex: Futex,
     value: UnsafeCell<T>,
 }
 
-// std source code has an excellent explanation why are these impls sound
+/// `Send` means that it is allowed to pass `T` between threads by value. `Mutex` is `Send` only when the contained type is `Send`
 unsafe impl<T: Send> Send for Mutex<T> {}
+/// `Mutex` allows access to value from any thread. Therefore, for `Mutex` to be `Sync`, the value should be `Send`.
+///
+/// It is not necessary to be `Sync`, because `Mutex` only allows one access at a time (only `&mut T`, not `&T`)
+///
+/// Reference: <https://github.com/rust-lang/rust/blob/9e293ae9f8abecb0be5105787d181518c9012a19/library/std/src/sync/poison/mutex.rs#L240>
 unsafe impl<T: Send> Sync for Mutex<T> {}
 
 impl<T> Mutex<T> {
+    /// Creates a new `Mutex`
     pub const fn new(t: T) -> Mutex<T> {
         Mutex {
             futex: Futex::new(),
@@ -22,14 +29,16 @@ impl<T> Mutex<T> {
         }
     }
 
+    /// Locks a mutex
     pub fn lock<'a>(&'a self) -> MutexGuard<'a, T> {
         self.futex.lock();
-        MutexGuard::new(self)
+        unsafe { MutexGuard::new(self) }
     }
 
+    /// Tries to acquire a lock without waiting
     pub fn try_lock<'a>(&'a self) -> Option<MutexGuard<'a, T>> {
         if self.futex.try_lock() {
-            Some(MutexGuard::new(self))
+            unsafe { Some(MutexGuard::new(self)) }
         } else {
             None
         }
@@ -53,6 +62,10 @@ impl<T: Debug> fmt::Debug for Mutex<T> {
     }
 }
 
+/// Mutex guard, that is automatically released on drop
+///
+/// To access the contained value, use [`Deref`] or [`DerefMut`] traits:
+/// `*value`
 #[must_use = "if unused the Mutex will immediately unlock"]
 //#[must_not_suspend = "holding a MutexGuard across suspend \
 //                      points can cause deadlocks, delays, \
@@ -64,8 +77,8 @@ pub struct MutexGuard<'a, T> {
 }
 
 impl<T> MutexGuard<'_, T> {
-    // should only be called when mutex is locked
-    fn new<'a>(mutex: &'a Mutex<T>) -> MutexGuard<'a, T> {
+    // safety: should only be called when mutex is locked
+    unsafe fn new<'a>(mutex: &'a Mutex<T>) -> MutexGuard<'a, T> {
         MutexGuard { mutex, __notsend: PhantomData }
     }
 }

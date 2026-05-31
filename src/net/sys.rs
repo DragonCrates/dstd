@@ -113,7 +113,7 @@ unsafe extern "C" {
     pub fn socket(domain: c_int, _type: c_int, protocol: c_int) -> Socket;
     pub fn bind(socket: Socket, sockaddr: *const sockaddr, addrlen: socklen_t) -> c_int;
     pub fn listen(socket: Socket, backlog: c_int) -> c_int;
-    pub fn accept(socket: Socket, addr: *const sockaddr, addrlen: *mut socklen_t) -> Socket;
+    pub fn accept(socket: Socket, addr: *mut sockaddr, addrlen: *mut socklen_t) -> Socket;
     // These have different definition on windows
     pub fn send(socket: Socket, buf: *const u8, size: SendLen, flags: c_int) -> SendRet;
     pub fn recv(socket: Socket, buf: *mut u8, size: SendLen, flags: c_int) -> SendRet;

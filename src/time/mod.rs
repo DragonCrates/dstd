@@ -1,3 +1,5 @@
+//! Time functions
+
 use core::ptr;
 use core::ffi::{c_int, c_long, c_char};
 
@@ -17,58 +19,81 @@ unsafe extern "C" {
     fn time(tloc: *mut time_t) -> time_t;
 }
 
-/// Re-export from [`core`]
-///
-pub use core::time::Duration;
+#[doc(no_inline)]
+pub use core::time::{Duration, TryFromFloatSecsError};
 
+/// Monotonic clock, used to measure time
 #[derive(Debug, Clone, Copy)]
 pub struct Instant(sys::Instant);
 
 impl Instant {
+    /// Returns current time
     pub fn now() -> Instant {
         Instant(sys::Instant::now())
     }
 
-    pub fn elapsed(self) -> Duration {
-        Instant::now().duration_since(self)
+    /// Returns the amount of time elapsed since this instant
+    pub fn elapsed(&self) -> Duration {
+        Instant::now().duration_since(*self)
     }
 
+    /// Returns the amount of time elapsed from another instant to this one
+    ///
+    /// Equivalent: `self - earlier`
     pub fn duration_since(&self, earlier: Instant) -> Duration {
         self.0.duration_since(earlier.0)
     }
+    // TODO: checked_duration_since
+
+    // TODO: as_duration, from_duration
+
+    // TODO: checked_add, checked_sub
 }
 
+// TODO: impl Sub Instand and Add/Sub Duration
+
+/// System clock, that represents real world time
 #[derive(Default, Debug, Clone, Copy)]
 pub struct SystemTime {
     time: time_t,
 }
 
 impl SystemTime {
+    /// Returns current real time
     pub fn now() -> SystemTime {
         unsafe { SystemTime {
             time: time(ptr::null_mut())
         } }
     }
 
+    /// Formats this time, using global timezone
     pub fn to_global(&self) -> Option<FormatTime> {
         let tm = sys::gmtime(self.time)?;
         Some(FormatTime::from_tm(tm))
     }
 
+    /// Formats this time, using local timezone
     pub fn to_local(&self) -> Option<FormatTime> {
         let tm = sys::localtime(self.time)?;
         Some(FormatTime::from_tm(tm))
     }
 
-    pub fn to_unix(&self) -> time_t {
+    /// Returns unix timestamp (`time_t`)
+    pub fn as_unix(&self) -> time_t {
         self.time
     }
 
+    /// Constructs `SystemTime` from a unix timestamp
     pub fn from_unix(time: time_t) -> SystemTime {
         SystemTime { time }
     }
+
+    // TODO: as_duration, from_duration
+    // Probably need to expose struct timespec or create new duration
+    // Or just expost .as_nanos
 }
 
+/// Formatted time structure
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct FormatTime {
     /// Year
@@ -90,6 +115,7 @@ pub struct FormatTime {
 }
 
 impl FormatTime {
+    /// Converts `FormatTime` to a `SystemTime`
     pub fn to_system(&self) -> SystemTime {
         let hms = hms_to_time(self.hour, self.min, self.sec);
         let ymd = epoch_days_fast(self.year, self.mon+1, self.day) * 86400;
