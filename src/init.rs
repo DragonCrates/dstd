@@ -21,7 +21,7 @@ crate::block! {
         unsafe {
             let mut argc = 0;
             let argv = CommandLineToArgvW(GetCommandLineW(), &mut argc);
-            *ARGS.0.get() = slice::from_raw_parts(argv, argc as usize);
+            ARGS = slice::from_raw_parts(argv, argc as usize);
         }
     }
 }
@@ -41,7 +41,7 @@ crate::block! {
             // sigpipe handler
             signal(SIGPIPE, SIG_IGN);
             // set args vector
-            *ARGS.0.get() = slice::from_raw_parts(argv, argc as usize);
+            ARGS = slice::from_raw_parts(argv, argc as usize);
         }
     }
 }

@@ -1,5 +1,3 @@
-use core::cell::UnsafeCell;
-
 use crate::prelude::{String, ToString};
 use crate::ffi::{OsStr, OsChar};
 
@@ -27,7 +25,6 @@ crate::block! {
             let mut wenviron = *__p__wenviron();
             // wenviron is not initialized in programs that use main instead of wmain
             if wenviron.is_null() {
-                // this does not race, getenv is thread safe on windows
                 getenv([0].as_ptr());
                 wenviron = *__p__wenviron();
             }
@@ -36,10 +33,7 @@ crate::block! {
     }
 }
 
-pub(crate) struct SyncUnsafeCell<T>(pub UnsafeCell<T>);
-unsafe impl<T> Sync for SyncUnsafeCell<T> {}
-
-pub(crate) static ARGS: SyncUnsafeCell<&[*const OsChar]> = SyncUnsafeCell(UnsafeCell::new(&[]));
+pub(crate) static mut ARGS: &[*const OsChar] = &[];
 
 pub struct Args {
     index: usize,
@@ -53,7 +47,7 @@ impl Iterator for Args {
     type Item = String;
 
     fn next(&mut self) -> Option<String> {
-        let args = unsafe { *ARGS.0.get() };
+        let args = unsafe { ARGS };
         let ptr = args.get(self.index)?;
         self.index += 1;
 
