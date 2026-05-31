@@ -35,3 +35,8 @@ impl<T, F: FnOnce() -> T> LazyLock<T, F> {
         unsafe { &data.value }
     }
 }
+
+// We never create a `&F` from a `&LazyLock<T, F>` so it is fine
+// to not impl `Sync` for `F`.
+unsafe impl<T: Sync + Send, F: Send> Sync for LazyLock<T, F> {}
+// auto-derived `Send` impl is OK.
