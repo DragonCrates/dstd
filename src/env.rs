@@ -1,14 +1,16 @@
+//! Process environment functions
+
 use crate::prelude::{String, ToString};
 use crate::ffi::{OsStr, OsChar};
 
 #[cfg(unix)]
 crate::block! {
     unsafe extern "C" {
-        pub fn getenv(name: *const u8) -> *mut u8;
+        fn getenv(name: *const u8) -> *mut u8;
         static environ: *const *const u8;
     }
 
-    pub fn getenviron() -> *const *const u8 {
+    fn getenviron() -> *const *const u8 {
         unsafe { environ }
     }
 }
@@ -35,10 +37,12 @@ crate::block! {
 
 pub(crate) static mut ARGS: &[*const OsChar] = &[];
 
+/// Iterator that returns commandline args. Returned by [`args`]
 pub struct Args {
     index: usize,
 }
 
+/// Returns commandline arguments
 pub fn args() -> Args {
     Args { index: 0 }
 }
@@ -56,10 +60,12 @@ impl Iterator for Args {
     }
 }
 
+/// Iterator that returns environment variables
 pub struct Vars {
     i: *const *const OsChar,
 }
 
+/// Returns env vars
 pub fn vars() -> Vars {
     Vars { i: getenviron() }
 }
@@ -81,6 +87,7 @@ impl Iterator for Vars {
     }
 }
 
+/// Retrieves env var by name
 pub fn var(name: &str) -> Option<String> {
     let mut buf = [0; 256];
     let name_os = crate::ffi::str_to_os(name, &mut buf).unwrap();
@@ -92,3 +99,7 @@ pub fn var(name: &str) -> Option<String> {
     let ret_str = ret_os.to_utf8().unwrap();
     Some(ret_str.to_string())
 }
+
+// TODO: ArgsOs, VarsOs, var_os
+
+// TODO: unsafe setenv
