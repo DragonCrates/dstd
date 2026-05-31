@@ -10,7 +10,7 @@ use crate::prelude::String;
 type _ErrorOs = c_int;
 #[cfg(windows)]
 type _ErrorOs = DWORD;
-/// Raw OS error type. Returned by `errno` on Linux (`c_int`) or by `GetLastError` on Windows (`DWORD`)
+/// Raw OS error type. `c_int` on Linux and `DWORD` on Windows
 pub type ErrorOs = _ErrorOs;
 
 /// The error of any I/O operations

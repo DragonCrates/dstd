@@ -46,14 +46,14 @@ unsafe extern "C" {
     ) -> BOOL;
 }
 
-/// Constructs a new handle to the standard input of the current process
+/// Returns a handle to the standard input of the current process
 pub fn stdin() -> Stdio { Stdio(STDIN) }
-/// Constructs a new handle to the standard output of the current process
+/// Returns a handle to the standard output of the current process
 pub fn stdout() -> Stdio { Stdio(STDOUT) }
-/// Constructs a new handle to the standard error of the current process
+/// Returns a handle to the standard error of the current process
 pub fn stderr() -> Stdio { Stdio(STDERR) }
 
-/// A handle to the stdio stream of the process
+/// A handle to the stdio stream of the process. Returned by [`stdin`], [`stdout`] or [`stderr`] functions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Stdio(StdioType);
 
