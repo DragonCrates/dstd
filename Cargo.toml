@@ -3,6 +3,13 @@ name = "dstd"
 version = "0.1.0"
 edition = "2024"
 
+authors = ["Neltharion01 <NtNeltharion@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Lightweight std replacement"
+readme = "README.md"
+repository = "https://github.com/Neltharion01/dstd"
+keywords = ["no_std"]
+
 [profile.dev]
 panic = "abort"
 
