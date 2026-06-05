@@ -124,8 +124,7 @@ fn strerror(error: ErrorOs) -> String {
         ptr::null_mut(),
     ) };
     if ret == 0 {
-        let error2 = unsafe { GetLastError() };
-        return format!("FormatMessage failed for error {} with code {}", error, error2);
+        return format!("Unknown error {error}");
     }
     let mut end = buf.iter().position(|&i| i == 0).expect("unterminated C string");
     if buf[end-2] == b'\r' as u16 && buf[end-1] == b'\n' as u16 {
