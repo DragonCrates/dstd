@@ -30,13 +30,13 @@ impl<T> Mutex<T> {
     }
 
     /// Locks a mutex
-    pub fn lock<'a>(&'a self) -> MutexGuard<'a, T> {
+    pub fn lock(&self) -> MutexGuard<'_, T> {
         self.futex.lock();
         unsafe { MutexGuard::new(self) }
     }
 
     /// Tries to acquire a lock without waiting
-    pub fn try_lock<'a>(&'a self) -> Option<MutexGuard<'a, T>> {
+    pub fn try_lock(&self) -> Option<MutexGuard<'_, T>> {
         if self.futex.try_lock() {
             unsafe { Some(MutexGuard::new(self)) }
         } else {
@@ -81,7 +81,7 @@ unsafe impl<T: Sync> Sync for MutexGuard<'_, T> {}
 
 impl<T> MutexGuard<'_, T> {
     // safety: should only be called when mutex is locked
-    unsafe fn new<'a>(mutex: &'a Mutex<T>) -> MutexGuard<'a, T> {
+    unsafe fn new(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
         MutexGuard { mutex, __notsend: PhantomData }
     }
 }

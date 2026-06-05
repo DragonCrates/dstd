@@ -94,7 +94,7 @@ impl SystemTime {
 }
 
 /// Formatted time structure
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct FormatTime {
     /// Year
     pub year: i32,
@@ -183,7 +183,7 @@ fn epoch_days_fast(y: i32, m: u8, d: u8) -> time_t {
     let year_base = 4800;    /* Before min year, multiple of 400. */
     let m_adj = m - 3;       /* March-based month. */
     // Original code relied on underflow here, but I had to fix it to use signed integers
-    let carry = if m_adj < 0 { 1 } else { 0 };
+    let carry = (m_adj < 0) as i64;
     let adjust = if carry == 1 { 12 } else { 0 };
     let y_adj = y + year_base - carry;
     let month_days = ((m_adj + adjust) * 62719 + 769) / 2048;

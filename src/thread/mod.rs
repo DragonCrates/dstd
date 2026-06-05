@@ -45,11 +45,16 @@ pub struct JoinHandle<T> {
 }
 
 impl<T> JoinHandle<T> {
+    /// Wait for the associated thread to finish
+    /// # Panics
+    /// This function panics if it can't retrieve thread's return value (meaning it did not finish), for example when it was cancelled by native code
     pub fn join(self) -> T {
         self.handle.join();
         let ret = unsafe { &mut *self.ret.get() };
         ret.take().expect("thread was cancelled")
     }
+
+    // TODO: as handle, as pthread_t
 }
 
 /// Returns the amount of available processor cores

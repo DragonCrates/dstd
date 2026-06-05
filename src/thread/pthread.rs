@@ -46,12 +46,12 @@ where
 {
     let mut thread: pthread_t = 0;
     let ret = unsafe { pthread_create(
-        &mut thread as *mut pthread_t, // thread
+        &raw mut thread, // thread
         ptr::null(), // attr
         start::<F, T>, // start routine
         args as *mut c_void, // arg
     ) };
-    if ret != 0 { panic!("pthread_create failed: {}", Error::from_raw_os_error(ret)); }
+    assert!(ret == 0, "pthread_create failed: {}", Error::from_raw_os_error(ret));
     JoinHandle(Some(thread))
 }
 
@@ -61,7 +61,7 @@ impl JoinHandle {
     pub fn join(mut self) {
         let thread = self.0.take().expect("attempt to join an already joined thread");
         let ret = unsafe { pthread_join(thread, ptr::null_mut()) };
-        if ret != 0 { panic!("pthread_join failed: {}", Error::from_raw_os_error(ret)); }
+        assert!(ret == 0, "pthread_join failed: {}", Error::from_raw_os_error(ret));
     }
 }
 
@@ -69,7 +69,7 @@ impl Drop for JoinHandle {
     fn drop(&mut self) {
         if let Some(thread) = self.0 {
             let ret = unsafe { pthread_detach(thread) };
-            if ret != 0 { panic!("pthread_detach failed: {}", Error::from_raw_os_error(ret)); }
+            assert!(ret == 0, "pthread_detach failed: {}", Error::from_raw_os_error(ret));
         }
     }
 }
@@ -85,6 +85,6 @@ const _SC_NPROCESSORS_ONLN: c_int = 0x0061;
 
 pub fn ncpu() -> usize {
     let ret = unsafe { sysconf(_SC_NPROCESSORS_ONLN) };
-    if ret == -1 { panic!("sysconf(_SC_NPROCESSORS_ONLN) failed"); }
+    assert!(ret != -1, "sysconf(_SC_NPROCESSORS_ONLN) failed");
     ret as usize
 }

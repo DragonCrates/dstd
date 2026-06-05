@@ -58,9 +58,9 @@ impl Add for Timespec {
             tv_sec: self.tv_sec.saturating_add(rhs.tv_sec),
             tv_nsec: self.tv_nsec + rhs.tv_nsec,
         };
-        if out.tv_nsec >= 1000000000 {
+        if out.tv_nsec >= 1_000_000_000 {
             out.tv_sec += 1;
-            out.tv_nsec -= 1000000000;
+            out.tv_nsec -= 1_000_000_000;
         }
         out
     }
@@ -75,7 +75,7 @@ impl Sub for Timespec {
         };
         if out.tv_nsec < 0 {
             out.tv_sec -= 1;
-            out.tv_nsec += 1000000000;
+            out.tv_nsec += 1_000_000_000;
         }
         out
     }
@@ -89,9 +89,9 @@ impl Instant {
         let mut out = Timespec::default();
         let ret = unsafe { clock_gettime(
             CLOCK_MONOTONIC, // clockid
-            &mut out as *mut Timespec, // tp
+            &raw mut out, // tp
         ) };
-        if ret == -1 { panic!("clock_gettime failed: {}", Error::last_os_error()); }
+        assert!(ret != -1, "clock_gettime failed: {}", Error::last_os_error());
         Instant(out)
     }
 
@@ -102,14 +102,20 @@ impl Instant {
 
 pub fn gmtime(time: time_t) -> Option<Tm> {
     let mut tm = Tm::default();
-    let ret = unsafe { gmtime_r(&time, &mut tm) };
+    let ret = unsafe { gmtime_r(
+        &raw const time, // timep
+        &raw mut tm, // result
+    ) };
     if ret.is_null() { return None; }
     Some(tm)
 }
 
 pub fn localtime(time: time_t) -> Option<Tm> {
     let mut tm = Tm::default();
-    let ret = unsafe { localtime_r(&time, &mut tm) };
+    let ret = unsafe { localtime_r(
+        &raw const time, // timep
+        &raw mut tm, // result
+    ) };
     if ret.is_null() { return None; }
     Some(tm)
 }
@@ -121,7 +127,7 @@ pub fn sleep(dur: Duration) {
         let res = unsafe { clock_nanosleep(
             CLOCK_MONOTONIC, // clockid
             TIMER_ABSTIME, // flags
-            &end as *const Timespec, // t
+            &raw const end, // t
             ptr::null_mut(), // remain
         ) };
         if res == 0 {

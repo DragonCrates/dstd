@@ -42,6 +42,8 @@ impl OsStr {
     }
 
     /// Constructs a new `OsStr` from a given slice, checking that a slice is valid
+    /// # Errors
+    /// Returns error if slice is not null terminated, or contains zeros other than null terminator
     pub fn new(slice: &[OsChar]) -> Result<&OsStr, OsStrError> {
         if slice.is_empty() { return Err(OsStrError::NotTerminated); }
         let last = slice.len() - 1;
@@ -74,7 +76,9 @@ impl OsStr {
         self.inner.as_ptr()
     }
 
-    /// Decodes the `OsStr` into native [`String`], returning error if it contained any invalid code points
+    /// Decodes the `OsStr` into native [`String`]
+    /// # Errors
+    /// Returns error if it contains any invalid code points
     pub fn to_utf8(&self) -> Result<String, OsUtf8Error> {
         #[cfg(windows)]
         return Ok(String::from_utf16(self.as_bytes())?);
@@ -114,9 +118,9 @@ impl ToOwned for OsStr {
         self.to_os_string()
     }
 
-    fn clone_into(&self, dest: &mut OsString) {
-        dest.inner.clear();
-        dest.inner.extend_from_slice(&self.inner);
+    fn clone_into(&self, target: &mut OsString) {
+        target.inner.clear();
+        target.inner.extend_from_slice(&self.inner);
     }
 }
 
@@ -197,7 +201,7 @@ impl fmt::Display for OsUtf8Error {
 
 impl Error for OsUtf8Error {}
 
-/// Constructs a new OsStr reference by using a stack buffer
+/// Constructs a new `OsStr` reference by using a stack buffer
 ///
 /// If buffer size was not enough, it allocates and returns `Cow::Owned`
 pub(crate) fn str_to_os<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
@@ -245,7 +249,9 @@ impl OsString {
         OsString { inner: v }
     }
 
-    /// Constructs a new `OsString` from a given character vector, additionally checking it for validity. Last element must be zero, should not contain any other zeroes
+    /// Constructs a new `OsString` from a given character vector, additionally checking it for validity
+    /// # Errors
+    /// Returns error if string is not null terminated, or if it contains zeros other than null terminator
     pub fn new(v: Vec<OsChar>) -> Result<OsString, OsStrError> {
         // check
         let _ = OsStr::new(&v)?;
@@ -253,7 +259,7 @@ impl OsString {
         Ok(unsafe { OsString::new_unchecked(v) })
     }
 
-    /// Converts this `OsString` into an OsStr reference
+    /// Converts this `OsString` into an `OsStr` reference
     pub fn as_os_str(&self) -> &OsStr {
         unsafe { OsStr::new_unchecked(&self.inner) }
     }

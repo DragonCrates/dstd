@@ -20,7 +20,7 @@ impl Once {
     }
 
     /// Performs the initialization only once
-    pub fn call_once(&self, f: impl FnOnce()) {
+    pub fn call_once<F: FnOnce()>(&self, f: F) {
         if !self.inited.load(Acquire) {
             self.futex.lock();
             if !self.inited.load(Relaxed) {

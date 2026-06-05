@@ -36,7 +36,7 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32) {
     let ret = unsafe {
         syscall(
             SYS_futex,
-            futex as *const AtomicU32, // uaddr
+            futex, // uaddr
             FUTEX_WAIT | FUTEX_PRIVATE_FLAG,
             expected, // val
             ptr::null::<u32>(), // timeout
@@ -62,13 +62,11 @@ pub fn futex_wake(futex: &AtomicU32) {
     let ret = unsafe {
         syscall(
             SYS_futex,
-            futex as *const AtomicU32,
+            futex,
             FUTEX_WAKE | FUTEX_PRIVATE_FLAG,
             1,
         )
     };
 
-    if ret == -1 {
-        panic!("futex_wake failed: {}", Error::last_os_error());
-    }
+    assert!(ret != -1, "futex_wake failed: {}", Error::last_os_error());
 }

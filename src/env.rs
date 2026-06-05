@@ -88,6 +88,8 @@ impl Iterator for Vars {
 }
 
 /// Retrieves env var by name
+/// # Panics
+/// If variable name contains zeroes or if its value contains invalid unicode
 pub fn var(name: &str) -> Option<String> {
     let mut buf = [0; 256];
     let name_os = crate::ffi::str_to_os(name, &mut buf).unwrap();
@@ -97,7 +99,7 @@ pub fn var(name: &str) -> Option<String> {
 
     let ret_os = unsafe { OsStr::from_ptr(ret) };
     let ret_str = ret_os.to_utf8().unwrap();
-    Some(ret_str.to_string())
+    Some(ret_str)
 }
 
 // TODO: ArgsOs, VarsOs, var_os
