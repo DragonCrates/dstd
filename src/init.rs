@@ -46,6 +46,13 @@ crate::block! {
     }
 }
 
+/// Not a public api! Exposed only for the `main!` macro
+#[doc(hidden)]
+pub use crate::alloc::System as __SystemAllocator;
+/// Not a public api! Exposed only for the `main!` macro
+#[doc(hidden)]
+pub use crate::panic::panic as __panic_handler;
+
 /// Defines a main function for your crate
 ///
 /// See the [module level](crate) doc for example
@@ -53,7 +60,16 @@ crate::block! {
 macro_rules! main {
     ($name:ident) => {
         mod __dstd_main {
-            use $crate::init::Termination;
+            use core::panic::PanicInfo;
+            use $crate::init::{Termination, __SystemAllocator, __panic_handler};
+
+            #[global_allocator]
+            static GLOBAL_ALLOCATOR: __SystemAllocator = __SystemAllocator;
+
+            #[panic_handler]
+            fn panic_handler(info: &PanicInfo) -> ! {
+                __panic_handler(info)
+            }
 
             #[unsafe(no_mangle)]
             fn main(argc: i32, argv: *const *const u8) -> i32 {

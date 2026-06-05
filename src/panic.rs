@@ -2,8 +2,7 @@ use core::panic::{PanicInfo, PanicMessage};
 
 use crate::eprintln;
 
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
+pub fn panic(info: &PanicInfo) -> ! {
     let message = info.message();
     let (file, line, column);
     if let Some(loc) = info.location() {
@@ -120,9 +119,9 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
 }
 
 // Never called with panic = "abort"
-#[unsafe(no_mangle)]
-unsafe extern "C" fn rust_eh_personality() {}
+//#[unsafe(no_mangle)]
+//unsafe extern "C" fn rust_eh_personality() {}
 
 // TODO remove if builds on windows without this. gnu and msvc
-#[unsafe(no_mangle)]
-unsafe extern "C" fn _Unwind_Resume() {}
+//#[unsafe(no_mangle)]
+//unsafe extern "C" fn _Unwind_Resume() {}

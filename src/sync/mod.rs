@@ -27,5 +27,5 @@ extern crate alloc;
 #[doc(no_inline)]
 pub use alloc::sync::Arc;
 
-// TODO condvar, SmallFutex, mpsc
+// TODO condvar, SmallFutex, mpsc, Barrier, Semaphore
 // https://github.com/rust-lang/rust/blob/main/library/std/src/sys/sync/condvar/futex.rs

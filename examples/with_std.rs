@@ -1,6 +1,5 @@
-// TODOs for this example:
-// 1) panic handler and global allocator should be optional
-// Preferable solution - activated by dstd main, but could be a feature flag
+// You can still use std without any issues if you are not adding
+// `dstd::main!` and `#![no_std]`
 fn main() {
     std::println!("This is print from std");
     dstd::println!("This is print from dstd");

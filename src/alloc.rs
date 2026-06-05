@@ -29,6 +29,3 @@ unsafe impl GlobalAlloc for System {
         unsafe { realloc(ptr, new_size) }
     }
 }
-
-#[global_allocator]
-static GLOBAL_ALLOCATOR: System = System;

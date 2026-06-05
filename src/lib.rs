@@ -32,8 +32,8 @@
 mod cfg_if;
 pub(crate) use cfg_if::{block, cfg_if};
 
-mod alloc;
-mod panic;
+pub(crate) mod alloc;
+pub(crate) mod panic;
 
 // TODO:
 // fs
