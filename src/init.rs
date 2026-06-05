@@ -76,6 +76,14 @@ macro_rules! main {
                 unsafe { $crate::init::__init(argc, argv); }
                 super::$name().report()
             }
+
+            // Never called with panic = "abort"
+            #[unsafe(no_mangle)]
+            unsafe extern "C" fn rust_eh_personality() {}
+
+            // TODO remove if builds on windows without this. gnu and msvc
+            //#[unsafe(no_mangle)]
+            //unsafe extern "C" fn _Unwind_Resume() {}
         }
     }
 }
