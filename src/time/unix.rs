@@ -89,7 +89,7 @@ impl Instant {
         let mut out = Timespec::default();
         let ret = unsafe { clock_gettime(
             CLOCK_MONOTONIC, // clockid
-            &raw mut out, // tp
+            &mut out, // tp
         ) };
         assert!(ret != -1, "clock_gettime failed: {}", Error::last_os_error());
         Instant(out)
@@ -103,8 +103,8 @@ impl Instant {
 pub fn gmtime(time: time_t) -> Option<Tm> {
     let mut tm = Tm::default();
     let ret = unsafe { gmtime_r(
-        &raw const time, // timep
-        &raw mut tm, // result
+        &time, // timep
+        &mut tm, // result
     ) };
     if ret.is_null() { return None; }
     Some(tm)
@@ -113,8 +113,8 @@ pub fn gmtime(time: time_t) -> Option<Tm> {
 pub fn localtime(time: time_t) -> Option<Tm> {
     let mut tm = Tm::default();
     let ret = unsafe { localtime_r(
-        &raw const time, // timep
-        &raw mut tm, // result
+        &time, // timep
+        &mut tm, // result
     ) };
     if ret.is_null() { return None; }
     Some(tm)
@@ -127,7 +127,7 @@ pub fn sleep(dur: Duration) {
         let res = unsafe { clock_nanosleep(
             CLOCK_MONOTONIC, // clockid
             TIMER_ABSTIME, // flags
-            &raw const end, // t
+            &end, // t
             ptr::null_mut(), // remain
         ) };
         if res == 0 {

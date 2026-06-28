@@ -46,7 +46,7 @@ where
 {
     let mut thread: pthread_t = 0;
     let ret = unsafe { pthread_create(
-        &raw mut thread, // thread
+        &mut thread, // thread
         ptr::null(), // attr
         start::<F, T>, // start routine
         args as *mut c_void, // arg

@@ -58,7 +58,7 @@ impl TcpListener {
             let listener = TcpListener { handle };
 
             let sockaddr = addr.to_sockaddr();
-            let ret = bind(handle, &raw const sockaddr, mem::size_of::<sockaddr>() as socklen_t);
+            let ret = bind(handle, &sockaddr, mem::size_of::<sockaddr>() as socklen_t);
             if ret == -1 { return Err(sockerror()); }
             let ret = listen(handle, SOMAXCONN);
             if ret == -1 { return Err(sockerror()); }
@@ -70,7 +70,7 @@ impl TcpListener {
     pub fn accept(&self) -> Result<(TcpStream, SocketAddr)> {
         let mut addr = sockaddr::default();
         let mut addrlen = mem::size_of::<sockaddr>() as socklen_t;
-        let handle = unsafe { accept(self.handle, &raw mut addr, &raw mut addrlen) };
+        let handle = unsafe { accept(self.handle, &mut addr, &mut addrlen) };
         if handle == INVALID_SOCKET { return Err(sockerror()); }
         Ok((TcpStream { handle }, SocketAddr::from_sockaddr(addr)))
     }
