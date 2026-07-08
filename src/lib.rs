@@ -52,6 +52,7 @@ pub mod prelude;
 pub mod init;
 pub mod env;
 pub mod ffi;
+pub mod rand;
 
 // Link to libc on Linux
 #[cfg(any(target_os = "linux", target_os = "android"))]

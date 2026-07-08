@@ -103,9 +103,11 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
     crate::process::exit(101)
 }
 
+#[cfg(windows)]
 macro_rules! w {
     ($($ch:literal),*) => {
         &[$($ch as u16),*]
     }
 }
+#[cfg(windows)]
 use w;
