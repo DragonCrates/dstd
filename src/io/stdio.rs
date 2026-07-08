@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::io::{self, Result, Error, Write};
+use crate::io::{self, Result, Error, Read, Write};
 use crate::ffi::*;
 use crate::prelude::ToString;
 
@@ -57,8 +57,18 @@ pub fn stderr() -> Stdio { Stdio(STDERR) }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Stdio(StdioType);
 
-// TODO Read for Stdio
-// Need global LineReader with locking
+// TODO buffered stdin with global locking
+
+impl Read for Stdio {
+    #[cfg(unix)]
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        let ret = unsafe { io::read(self.0, buf.as_mut_ptr(), buf.len()) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(ret as usize)
+    }
+
+    // TODO windows
+}
 
 impl Write for Stdio {
     #[cfg(unix)]

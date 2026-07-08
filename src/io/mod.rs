@@ -13,6 +13,8 @@ use error::Repr;
 
 #[cfg(unix)]
 unsafe extern "C" {
+    /// Read from a file descriptor
+    pub(crate) fn read(fd: c_int, buf: *mut u8, count: c_size_t) -> c_ssize_t;
     /// Write to a file descriptor
     pub(crate) fn write(fd: c_int, buf: *const u8, count: c_size_t) -> c_ssize_t;
     /// Close a file descriptor
