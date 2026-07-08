@@ -28,8 +28,8 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
 #[allow(nonstandard_style)]
 fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> ! {
     use core::ptr;
-    use crate::io::stdio::{MultiByteToWideChar, GetStdHandle, STDERR};
-    use crate::prelude::{vec, format};
+    use crate::io::stdio::{GetStdHandle, STDERR};
+    use crate::prelude::{Vec, format};
     use crate::ffi::*;
 
     unsafe extern "C" {
@@ -82,27 +82,12 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
     let stderr = unsafe { GetStdHandle(STDERR) };
     if stderr.is_null() {
         // No stderr, call MessageBoxW
-        let msg = format!("Thread panicked at {file}:{line}:{column}:\r\n{message}\0");
-        let mut wstr = vec![0_u16; msg.len()];
-        let ret = unsafe { MultiByteToWideChar(
-            65001, // CodePage (CP_UTF8)
-            0, // dwFlags
-            msg.as_ptr() as LPCCH, // lpMultiByteStr
-            msg.len() as c_int, // cbMultiByte
-            wstr.as_mut_ptr(), // lpWideCharStr
-            wstr.len() as c_int, // cchWideChR
-        ) };
+        let msg: Vec<_> = format!("Thread panicked at {file}:{line}:{column}:\r\n{message}\0").encode_utf16().collect();
 
-        if ret == 0 {
-            // This is an error message for an error message... You win!
-            const MBTOWC_FAILED: &[u16] = &['M' as u16, 'u' as u16, 'l' as u16, 't' as u16, 'i' as u16, 'B' as u16, 'y' as u16, 't' as u16, 'e' as u16, 'T' as u16, 'o' as u16, 'W' as u16, 'i' as u16, 'd' as u16, 'e' as u16, 'C' as u16, 'h' as u16, 'a' as u16, 'r' as u16, ' ' as u16, 'f' as u16, 'a' as u16, 'i' as u16, 'l' as u16, 'e' as u16, 'd' as u16, '\0' as u16];
-            wstr = MBTOWC_FAILED.to_vec();
-        }
-
-        const RUST_PANIC: &[u16] = &['R' as u16, 'u' as u16, 's' as u16, 't' as u16, ' ' as u16, 'p' as u16, 'a' as u16, 'n' as u16, 'i' as u16, 'c' as u16, '\0' as u16];
+        const RUST_PANIC: &[u16] = w!('R', 'u', 's', 't', ' ', 'p', 'a', 'n', 'i', 'c', '\0');
         unsafe { MessageBoxW(
             ptr::null_mut(), // hWnd
-            wstr.as_ptr(), // lpText
+            msg.as_ptr(), // lpText
             RUST_PANIC.as_ptr(), // lpCaption
             MB_ICONERROR, // uType
         ); }
@@ -117,3 +102,10 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
 
     crate::process::exit(101)
 }
+
+macro_rules! w {
+    ($($ch:literal),*) => {
+        &[$($ch as u16),*]
+    }
+}
+use w;

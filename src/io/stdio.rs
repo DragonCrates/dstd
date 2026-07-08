@@ -28,7 +28,7 @@ unsafe extern "C" {
     /// Retrieves the current input mode of a console's input buffer or the current output mode of a console screen buffer.
     fn GetConsoleMode(hConsoleHandle: HANDLE, lpMode: LPDWORD) -> BOOL;
     /// Maps a character string to a UTF-16 (wide character) string.
-    pub(crate) fn MultiByteToWideChar(
+    fn MultiByteToWideChar(
         /* [in] */ CodePage: UINT,
         /* [in] */ dwFlags: DWORD,
         /* [in] */ lpMultiByteStr: LPCCH,
@@ -68,6 +68,10 @@ impl Read for Stdio {
     }
 
     // TODO windows
+    #[cfg(windows)]
+    fn read(&mut self, _buf: &mut [u8]) -> Result<usize> {
+        Ok(0)
+    }
 }
 
 impl Write for Stdio {
@@ -88,6 +92,7 @@ impl Write for Stdio {
         if handle == INVALID_HANDLE_VALUE { return Err(Error::last_os_error()); }
         let mut mode: DWORD = 0;
         let ret = unsafe { GetConsoleMode(handle, &mut mode as LPDWORD) };
+        // TODO: if console codepage is utf-8, skip too
         if ret != 0 {
             // Console
             let mut wstr = vec![0_u16; buf.len()];
