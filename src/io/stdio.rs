@@ -2,7 +2,8 @@ use core::fmt;
 
 use crate::io::{self, Result, Error, Read, Write};
 use crate::ffi::*;
-use crate::prelude::ToString;
+use crate::sync::Mutex;
+use crate::prelude::String;
 
 crate::cfg_if! {
     if #[cfg(unix)] {
@@ -135,10 +136,15 @@ impl Stdio {
     #[doc(hidden)]
     /// Not a public API! Please use the `println!` macro instead
     pub fn __print_internal(&mut self, args: fmt::Arguments) {
+        static BUF: Mutex<String> = Mutex::new(String::new());
+
         if let Some(s) = args.as_str() {
             let _ = self.write(s.as_bytes());
         } else {
-            let _ = self.write(args.to_string().as_bytes());
+            let mut buf = BUF.lock();
+            buf.clear();
+            fmt::write(&mut *buf, args).expect("Display implementation returned an unexpected error");
+            let _ = self.write(buf.as_bytes());
         }
     }
 }
