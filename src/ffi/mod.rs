@@ -47,6 +47,8 @@ crate::block! {
     // not used
     pub(crate) type LPOVERLAPPED = *mut c_void;
     pub(crate) type LPSECURITY_ATTRIBUTES = *mut c_void;
+
+    // TODO: move console structures here
 }
 
 mod os_str;

@@ -36,7 +36,8 @@ impl<T, F: FnOnce() -> T> LazyLock<T, F> {
     }
 }
 
-// We never create a `&F` from a `&LazyLock<T, F>` so it is fine
-// to not impl `Sync` for `F`.
+// Comment and impl taken from std:
+//   We never create a `&F` from a `&LazyLock<T, F>` so it is fine
+//   to not impl `Sync` for `F`.
 unsafe impl<T: Sync + Send, F: Send> Sync for LazyLock<T, F> {}
-// auto-derived `Send` impl is OK.
+//   auto-derived `Send` impl is OK.

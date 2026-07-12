@@ -103,5 +103,7 @@ pub fn var(name: &str) -> Option<String> {
 }
 
 // TODO: ArgsOs, VarsOs, var_os
+// TODO: implement Index for Args
+// TODO: on linux, add to initialization vector (__attribute__((constructor)))
 
 // TODO: unsafe setenv

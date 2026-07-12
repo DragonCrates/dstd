@@ -134,6 +134,7 @@ crate::block! {
     const WSADESCRIPTION_LEN: usize = 256;
     const WSASYS_STATUS_LEN: usize = 128;
 
+    // TODO: ideally, length of these structs should be verified aganist C code
     #[repr(C)]
     #[cfg(target_pointer_width = "64")]
     #[allow(non_snake_case)]
