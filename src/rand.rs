@@ -8,13 +8,7 @@ unsafe extern "C" {
     fn getrandom(buf: *mut u8, size: c_size_t, flags: c_uint) -> c_ssize_t;
 }
 
-pub struct RandomDevice(());
-
-impl RandomDevice {
-    pub fn new() -> RandomDevice {
-        RandomDevice(())
-    }
-}
+pub struct RandomDevice;
 
 impl Read for RandomDevice {
     #[cfg(unix)]
