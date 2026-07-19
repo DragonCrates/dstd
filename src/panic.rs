@@ -28,9 +28,10 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
 #[allow(nonstandard_style)]
 fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> ! {
     use core::ptr;
+    use core::ffi::c_int;
+    use crate::sys::windows::types::*;
     use crate::io::stdio::{GetStdHandle, STDERR};
     use crate::prelude::{Vec, format};
-    use crate::ffi::*;
 
     unsafe extern "C" {
         /// Displays a modal dialog box that contains a system icon, a set of buttons, and a brief application-specific message, such as status or error information.

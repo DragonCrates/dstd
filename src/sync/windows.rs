@@ -1,13 +1,13 @@
 use core::sync::atomic::AtomicU32;
 
-use crate::ffi::*;
+use crate::sys::windows::types::*;
 use crate::io::Error;
 
 unsafe extern "C" {
     /// Waits for the value at the specified address to change.
     fn WaitOnAddress(
-        /* [in] */ Address: *mut VOID, // should be volatile
-        /* [in] */ CompareAddress: *const VOID, // was PVOID
+        /* [in] */ Address: *mut VOID, // volatile pointer
+        /* [in] */ CompareAddress: *const VOID, // was PVOID, should be const instead of mut
         /* [in] */ AddressSize: SIZE_T,
         /* [in, optional] */ dwMilliseconds: DWORD,
     ) -> BOOL;

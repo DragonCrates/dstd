@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
 
 use core::ptr;
+use core::ffi::{c_int, c_long, c_ulong, c_void};
 
-use crate::ffi::*;
 use crate::io::Error;
 use crate::prelude::Box;
 

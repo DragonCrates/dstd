@@ -12,7 +12,7 @@ fn main() {
     println!("Date: {}, {:02} {} {:04}", weekday, t.day, month, t.year);
     println!("Time: {:02}:{:02}:{:02}", t.hour, t.min, t.sec);
     println!("Timezone: UTC+{}", t.tz_offset as f32 / 3600.0);
-    println!("Unix: {}", t.to_system().to_unix());
+    println!("Unix: {}", t.to_system().as_unix());
 
     println!("Sleep for 1 second...");
     let start = Instant::now();
@@ -44,7 +44,7 @@ fn main() {
         weekday: 0,
         tz_offset: 0,
     };
-    assert_eq!(1767481606, t.to_system().to_unix());
+    assert_eq!(1767481606, t.to_system().as_unix());
 
     let t = FormatTime {
         year: 1969,
@@ -56,6 +56,6 @@ fn main() {
         weekday: 3,
         tz_offset: 0,
     };
-    assert_eq!(-1, t.to_system().to_unix());
+    assert_eq!(-1, t.to_system().as_unix());
     println!("Done!");
 }

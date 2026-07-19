@@ -34,15 +34,14 @@ pub(crate) use cfg_if::{block, cfg_if};
 
 pub(crate) mod alloc;
 pub(crate) mod panic;
+pub(crate) mod sys;
 
 // TODO:
-// fs
-// stdin
 // udp, unix sockets, tcp connect
 // command spawn, pipes
 
 pub mod io;
-// TODO fs
+//pub mod fs;
 pub mod net;
 pub mod thread;
 pub mod time;
@@ -51,7 +50,7 @@ pub mod process;
 pub mod prelude;
 pub mod init;
 pub mod env;
-pub mod ffi;
+pub mod os_str;
 pub mod rand;
 
 // Link to libc on Linux

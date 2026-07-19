@@ -1,16 +1,22 @@
-use crate::ffi::*;
-use crate::prelude::Vec;
+#[cfg(unix)]
+use core::ffi::c_int;
+
+extern crate alloc;
+use alloc::vec::Vec;
+
+#[cfg(windows)]
+use crate::sys::windows::types::*;
+#[cfg(unix)]
+use crate::sys::libc::{c_ssize_t, c_size_t};
 
 pub(crate) mod stdio;
 pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
 mod error;
-pub use error::{Result, Error, ErrorOs};
-
-#[cfg(not(windows))]
-pub(crate) use error::errno;
+pub use error::{Result, Error, RawError};
 
 use error::Repr;
 
+// TODO: move these to libc
 #[cfg(unix)]
 unsafe extern "C" {
     /// Read from a file descriptor

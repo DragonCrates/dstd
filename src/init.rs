@@ -3,10 +3,13 @@ use core::slice;
 
 use crate::println;
 use crate::env::ARGS;
-use crate::ffi::*;
 
+// TODO: windows.rs, unix.rs
 #[cfg(windows)]
 crate::block! {
+    use core::ffi::c_int;
+    use crate::sys::windows::types::{LPCWSTR, LPWSTR};
+
     unsafe extern "C" {
         fn GetCommandLineW() -> LPWSTR;
         fn CommandLineToArgvW(
@@ -28,6 +31,8 @@ crate::block! {
 
 #[cfg(unix)]
 crate::block! {
+    use core::ffi::c_int;
+
     unsafe extern "C" {
         fn signal(signum: c_int, handler: usize) -> usize;
     }
@@ -81,9 +86,10 @@ macro_rules! main {
             #[unsafe(no_mangle)]
             unsafe extern "C" fn rust_eh_personality() {}
 
-            // TODO remove if builds on windows without this. gnu and msvc
-            //#[unsafe(no_mangle)]
-            //unsafe extern "C" fn _Unwind_Resume() {}
+            // glibc and mingw targets need this
+            #[cfg(target_env = "gnu")]
+            #[unsafe(no_mangle)]
+            unsafe extern "C" fn _Unwind_Resume() {}
         }
     }
 }

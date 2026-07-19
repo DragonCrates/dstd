@@ -12,6 +12,7 @@ pub struct System;
 // std's system allocator also takes in count the alignment value and uses posix_memalign
 // In case you are interested: https://doc.rust-lang.org/stable/src/std/sys/alloc/unix.rs.html
 // I did not implement that, for now. This is required, for example, for direct IO and for SIMD
+// TODO fix
 unsafe impl GlobalAlloc for System {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         unsafe { malloc(layout.size()) }

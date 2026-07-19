@@ -4,7 +4,8 @@ use core::ffi::{c_int, c_long};
 use core::ops::{Add, Sub};
 
 use super::{Tm, time_t};
-use crate::io::{Error, errno};
+use crate::io::Error;
+use crate::sys::libc::errno;
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 crate::block! {

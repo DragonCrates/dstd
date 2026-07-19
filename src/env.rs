@@ -1,8 +1,9 @@
 //! Process environment functions
 
 use crate::prelude::{String, ToString};
-use crate::ffi::{OsStr, OsChar};
+use crate::os_str::{OsStr, OsChar};
 
+// TODO windows.rs unix.rs
 #[cfg(unix)]
 crate::block! {
     unsafe extern "C" {
@@ -92,7 +93,7 @@ impl Iterator for Vars {
 /// If variable name contains zeroes or if its value contains invalid unicode
 pub fn var(name: &str) -> Option<String> {
     let mut buf = [0; 256];
-    let name_os = crate::ffi::str_to_os(name, &mut buf).unwrap();
+    let name_os = crate::os_str::str_to_os(name, &mut buf).unwrap();
 
     let ret = unsafe { getenv(name_os.as_ptr()) };
     if ret.is_null() { return None; }

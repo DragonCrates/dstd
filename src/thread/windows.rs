@@ -3,7 +3,7 @@
 use core::ptr;
 use core::mem;
 
-use crate::ffi::*;
+use crate::sys::windows::types::*;
 use crate::io::{Error, CloseHandle};
 use crate::prelude::Box;
 

@@ -1,10 +1,13 @@
+use core::ffi::c_int;
 use core::fmt;
 use core::ops::{Deref, DerefMut};
 
 use crate::io::{self, Result, Error, Read, Write};
-use crate::ffi::*;
 use crate::sync::Mutex;
 use crate::prelude::String;
+
+#[cfg(windows)]
+use crate::sys::windows::types::*;
 
 crate::cfg_if! {
     if #[cfg(unix)] {
@@ -22,6 +25,8 @@ crate::cfg_if! {
         type StdioType = DWORD;
     }
 }
+
+// TODO: windows.rs, unix.rs, buf.rs
 
 #[cfg(windows)]
 unsafe extern "C" {
@@ -104,8 +109,6 @@ impl Write for Stderr {
 /// A handle to the stdio stream of the process. Returned by [`stdin`], [`stdout`] or [`stderr`] functions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RawStdio(StdioType);
-
-// TODO buffered stdin with global locking
 
 impl Read for RawStdio {
     #[cfg(unix)]

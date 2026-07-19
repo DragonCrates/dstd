@@ -39,7 +39,7 @@ fn sockerror() -> Error {
     #[cfg(unix)]
     return Error::last_os_error();
     #[cfg(windows)]
-    return Error::from_raw_os_error(unsafe { WSAGetLastError() as crate::io::ErrorOs })
+    return Error::from_raw_os_error(unsafe { WSAGetLastError() as crate::io::RawError })
 }
 
 /// A TCP socket server, listening for connections

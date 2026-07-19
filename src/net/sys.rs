@@ -1,14 +1,21 @@
 #![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
 use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr};
-use crate::ffi::*;
+use core::ffi::{c_int, c_ushort};
+#[cfg(windows)]
+use core::ffi::c_char;
+
+#[cfg(windows)]
+use crate::sys::windows::types::*;
+#[cfg(unix)]
+use crate::sys::libc::{c_ssize_t, c_size_t};
 
 crate::cfg_if! {
     if #[cfg(windows)] {
-        pub type Socket = crate::ffi::SOCKET;
+        pub type Socket = SOCKET;
         pub const INVALID_SOCKET: Socket = usize::MAX;
     } else if #[cfg(unix)] {
-        pub type Socket = crate::ffi::c_int;
+        pub type Socket = c_int;
         pub const INVALID_SOCKET: Socket = -1;
     }
 }

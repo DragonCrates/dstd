@@ -1,7 +1,14 @@
-use crate::ffi::*;
-use crate::io::{self, Error, Read};
+#[cfg(unix)]
+use core::ffi::c_uint;
+
+#[cfg(unix)]
+use crate::sys::libc::{c_size_t, c_ssize_t};
+use crate::io::{self, Read};
+#[cfg(unix)]
+use crate::io::Error;
 
 // TODO: randint, choice. Needs xoshiro and thread locals support
+// split into windows.rs and unix.rs
 
 unsafe extern "C" {
     #[cfg(unix)]

@@ -3,7 +3,8 @@
 use core::ffi::c_long;
 use core::sync::atomic::AtomicU32;
 
-use crate::io::{Error, errno};
+use crate::io::Error;
+use crate::sys::libc::errno;
 
 crate::cfg_if! {
     if #[cfg(target_arch = "x86")] {
@@ -44,15 +45,15 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32) {
     };
 
     if ret == -1 {
-        let err = Error::last_os_error();
-        match err.raw_os_error().unwrap() {
+        let err = unsafe { *errno::errno() };
+        match err {
             // EAGAIN - futex != expected
             // EINTR - interrupted by a signal
             errno::EAGAIN | errno::EINTR => {}
             // ETIMEDOUT - timed out (we didn't provide any)
             // EFAULT - invalid address
             // EINVAL - invalid timeout
-            _ => panic!("futex_wait failed: {err}"),
+            other => panic!("futex_wait failed: {}", Error::from_raw_os_error(other)),
         }
     }
 }
