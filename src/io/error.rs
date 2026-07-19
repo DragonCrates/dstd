@@ -1,4 +1,5 @@
 use core::fmt;
+use core::str::Utf8Error;
 
 use crate::ffi::*;
 use crate::prelude::String;
@@ -23,6 +24,7 @@ pub struct Error {
 pub enum Repr {
     UnexpectedEof,
     WriteZero,
+    Utf8,
     Os(ErrorOs),
     //AddrInfo(AddrInfoError)
 }
@@ -138,6 +140,7 @@ impl fmt::Debug for Error {
         match self.repr {
             Repr::UnexpectedEof => f.debug_struct("UnexpectedEof").finish(),
             Repr::WriteZero => f.debug_struct("WriteZero").finish(),
+            Repr::Utf8 => f.debug_struct("Utf8").finish(),
             Repr::Os(errno) => f.debug_struct("Os")
                 .field("code", &errno)
                 .field("msg", &strerror(errno))
@@ -152,6 +155,7 @@ impl fmt::Display for Error {
         match self.repr {
             Repr::UnexpectedEof => f.write_str("unexpected eof"),
             Repr::WriteZero => f.write_str("write zero"),
+            Repr::Utf8 => f.write_str("stream did not contain valid UTF-8"),
             Repr::Os(errno) => f.write_str(&strerror(errno)),
             //Repr::AddrInfo(err) => f.fmt(err),
         }
@@ -159,6 +163,14 @@ impl fmt::Display for Error {
 }
 
 impl core::error::Error for Error {}
+
+impl From<Utf8Error> for Error {
+    fn from(_f: Utf8Error) -> Error {
+        Error {
+            repr: Repr::Utf8
+        }
+    }
+}
 
 /// Result type alias for I/O operations
 pub type Result<T> = core::result::Result<T, Error>;

@@ -2,7 +2,7 @@ use crate::ffi::*;
 use crate::prelude::Vec;
 
 pub(crate) mod stdio;
-pub use stdio::{Stdio, stdin, stdout, stderr};
+pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
 mod error;
 pub use error::{Result, Error, ErrorOs};
 

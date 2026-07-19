@@ -1,4 +1,5 @@
 use core::fmt;
+use core::ops::{Deref, DerefMut};
 
 use crate::io::{self, Result, Error, Read, Write};
 use crate::ffi::*;
@@ -48,19 +49,65 @@ unsafe extern "C" {
 }
 
 /// Returns a handle to the standard input of the current process
-pub fn stdin() -> Stdio { Stdio(STDIN) }
+pub fn stdin() -> Stdin { Stdin(()) }
 /// Returns a handle to the standard output of the current process
-pub fn stdout() -> Stdio { Stdio(STDOUT) }
+pub fn stdout() -> Stdout { Stdout(()) }
 /// Returns a handle to the standard error of the current process
-pub fn stderr() -> Stdio { Stdio(STDERR) }
+pub fn stderr() -> Stderr { Stderr(()) }
+
+pub struct Stdin(());
+
+impl Stdin {
+    pub fn read_line(&self, buf: &mut String) -> Result<usize> {
+        RAW_STDIN.lock().read_line(buf)
+    }
+}
+
+impl Read for Stdin {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        RAW_STDIN.lock().read(buf)
+    }    
+}
+
+pub struct Stdout(());
+
+impl Stdout {
+    #[doc(hidden)]
+    /// Not a public API! Please use the `println!` macro instead
+    pub fn __print_internal(&mut self, args: fmt::Arguments) {
+        RawStdio(STDOUT).__print_internal(args);
+    }
+}
+
+impl Write for Stdout {
+    fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        RawStdio(STDOUT).write(buf)
+    }
+}
+
+pub struct Stderr(());
+
+impl Stderr {
+    #[doc(hidden)]
+    /// Not a public API! Please use the `println!` macro instead
+    pub fn __print_internal(&mut self, args: fmt::Arguments) {
+        RawStdio(STDERR).__print_internal(args);
+    }
+}
+
+impl Write for Stderr {
+    fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        RawStdio(STDERR).write(buf)
+    }
+}
 
 /// A handle to the stdio stream of the process. Returned by [`stdin`], [`stdout`] or [`stderr`] functions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Stdio(StdioType);
+pub struct RawStdio(StdioType);
 
 // TODO buffered stdin with global locking
 
-impl Read for Stdio {
+impl Read for RawStdio {
     #[cfg(unix)]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         let ret = unsafe { io::read(self.0, buf.as_mut_ptr(), buf.len()) };
@@ -75,7 +122,7 @@ impl Read for Stdio {
     }
 }
 
-impl Write for Stdio {
+impl Write for RawStdio {
     #[cfg(unix)]
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
         let ret = unsafe { io::write(self.0, buf.as_ptr(), buf.len()) };
@@ -132,10 +179,78 @@ impl Write for Stdio {
     }
 }
 
-impl Stdio {
-    #[doc(hidden)]
-    /// Not a public API! Please use the `println!` macro instead
-    pub fn __print_internal(&mut self, args: fmt::Arguments) {
+struct RawStdin {
+    buf: Buf<256>,
+}
+
+static RAW_STDIN: Mutex<RawStdin> = Mutex::new(RawStdin { buf: Buf::new() });
+
+// TODO:
+// 1) does not handle partial utf-8 reads at all
+// 2) probably can be decoupled into BufRead
+impl RawStdin {
+    pub fn read_line(&mut self, buf: &mut String) -> Result<usize> {
+        let mut nw = 0;
+
+        // Try to empty buffer
+        if !self.buf.is_empty() {
+            if let Some(newline) = self.buf.iter().position(|&i| i == b'\n') {
+                buf.push_str(str::from_utf8(&self.buf[..newline+1])?);
+                nw += newline+1;
+                self.buf.consume(newline+1);
+                return Ok(nw);
+            } else {
+                buf.push_str(str::from_utf8(&self.buf)?);
+                nw += self.buf.len();
+                self.buf.clear();
+            }
+        }
+
+        loop {
+            // Fill buf
+            self.buf.resize(self.buf.maxlen());
+            let nr = RawStdio(STDIN).read(&mut self.buf[..])?;
+            if nr == 0 { return Ok(nw); }
+            self.buf.resize(nr);
+
+            // Try to find \n
+            if let Some(newline) = self.buf.iter().position(|&i| i == b'\n') {
+                buf.push_str(str::from_utf8(&self.buf[..newline+1])?);
+                nw += newline+1;
+                self.buf.consume(newline+1);
+                return Ok(nw);
+            } else {
+                buf.push_str(str::from_utf8(&self.buf)?);
+                nw += self.buf.len();
+                self.buf.clear();
+            }
+        }
+    }
+}
+
+impl Read for RawStdin {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        let mut nw = 0;
+        // Empty buffer, if it had something
+        if !self.buf.is_empty() {
+            if buf.len() <= self.buf.len() {
+                buf.copy_from_slice(&self.buf[..buf.len()]);
+                self.buf.consume(buf.len());
+                return Ok(buf.len());
+            } else {
+                nw = self.buf.len();
+                buf[..nw].copy_from_slice(&self.buf);
+                self.buf.clear();
+            }
+        }
+        // Read leftover into the buffer
+        nw += RawStdio(STDIN).read(&mut buf[nw..])?;
+        Ok(nw)
+    }
+}
+
+impl RawStdio {
+    fn __print_internal(&mut self, args: fmt::Arguments) {
         static BUF: Mutex<String> = Mutex::new(String::new());
 
         if let Some(s) = args.as_str() {
@@ -146,6 +261,66 @@ impl Stdio {
             fmt::write(&mut *buf, args).expect("Display implementation returned an unexpected error");
             let _ = self.write(buf.as_bytes());
         }
+    }
+}
+
+struct Buf<const S: usize> {
+    buf: [u8; S],
+    start: usize,
+    len: usize,
+}
+
+impl<const S: usize> Buf<S> {
+    const fn new() -> Buf<S> {
+        Buf {
+            buf: [0; S],
+            start: 0,
+            len: 0,
+        }
+    }
+
+    fn resize(&mut self, newlen: usize) {
+        debug_assert!(newlen <= S, "tried to resize buffer beyond max length");
+        if S - self.start < newlen {
+            // Newlen is more than available length, so we should move contents to beginning
+            self.buf.copy_within(self.start..self.len, 0);
+            self.start = 0;
+            self.len = newlen;
+        } else {
+            self.len = self.start + newlen;
+        }
+    }
+
+    fn consume(&mut self, n: usize) {
+        self.start += n;
+        debug_assert!(self.start <= self.len, "tried to consume more than buffer len");
+        if self.start == self.len { self.clear(); }
+    }
+
+    fn len(&self) -> usize {
+        self.len - self.start
+    }
+
+    fn maxlen(&self) -> usize {
+        S
+    }
+
+    fn clear(&mut self) {
+        self.start = 0;
+        self.len = 0;
+    }
+}
+
+impl<const S: usize> Deref for Buf<S> {
+    type Target = [u8];
+    fn deref(&self) -> &[u8] {
+        &self.buf[self.start..self.len]
+    }
+}
+
+impl<const S: usize> DerefMut for Buf<S> {
+    fn deref_mut(&mut self) -> &mut [u8] {
+        &mut self.buf[self.start..self.len]
     }
 }
 
