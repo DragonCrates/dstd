@@ -82,7 +82,7 @@ impl Drop for TcpListener {
             #[cfg(windows)]
             closesocket(self.handle);
             #[cfg(unix)]
-            crate::io::close(self.handle);
+            crate::sys::libc::close(self.handle);
         }
     }
 }

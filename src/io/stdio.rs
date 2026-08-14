@@ -2,12 +2,16 @@ use core::ffi::c_int;
 use core::fmt;
 use core::ops::{Deref, DerefMut};
 
-use crate::io::{self, Result, Error, Read, Write};
+extern crate alloc;
+use alloc::string::String;
+
+use crate::io::{Result, Error, Read, Write};
 use crate::sync::Mutex;
-use crate::prelude::String;
 
 #[cfg(windows)]
 use crate::sys::windows::types::*;
+#[cfg(unix)]
+use crate::sys::libc;
 
 crate::cfg_if! {
     if #[cfg(unix)] {
@@ -113,7 +117,7 @@ pub struct RawStdio(StdioType);
 impl Read for RawStdio {
     #[cfg(unix)]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let ret = unsafe { io::read(self.0, buf.as_mut_ptr(), buf.len()) };
+        let ret = unsafe { libc::read(self.0, buf.as_mut_ptr(), buf.len()) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
@@ -128,7 +132,7 @@ impl Read for RawStdio {
 impl Write for RawStdio {
     #[cfg(unix)]
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        let ret = unsafe { io::write(self.0, buf.as_ptr(), buf.len()) };
+        let ret = unsafe { libc::write(self.0, buf.as_ptr(), buf.len()) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
@@ -136,7 +140,7 @@ impl Write for RawStdio {
     #[cfg(windows)]
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
         use core::ptr;
-        use crate::prelude::vec;
+        use alloc::vec;
 
         let handle = unsafe { GetStdHandle(self.0) };
         if handle.is_null() { return Ok(0); }

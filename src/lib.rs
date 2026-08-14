@@ -41,7 +41,7 @@ pub(crate) mod sys;
 // command spawn, pipes
 
 pub mod io;
-//pub mod fs;
+pub mod fs;
 pub mod net;
 pub mod thread;
 pub mod time;
@@ -51,6 +51,7 @@ pub mod prelude;
 pub mod init;
 pub mod env;
 pub mod os_str;
+pub mod path;
 pub mod rand;
 
 // Link to libc on Linux

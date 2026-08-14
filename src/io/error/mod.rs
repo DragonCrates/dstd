@@ -1,6 +1,8 @@
 use core::fmt;
 use core::str::Utf8Error;
 
+use crate::os_str::OsStrError;
+
 #[cfg(windows)]
 crate::block! {
     mod windows;
@@ -29,6 +31,7 @@ pub enum Repr {
     UnexpectedEof,
     WriteZero,
     Utf8,
+    OsStr(OsStrError),
     Os(RawError),
     //AddrInfo(AddrInfoError)
 }
@@ -65,11 +68,12 @@ impl fmt::Debug for Error {
             Repr::UnexpectedEof => f.debug_struct("UnexpectedEof").finish(),
             Repr::WriteZero => f.debug_struct("WriteZero").finish(),
             Repr::Utf8 => f.debug_struct("Utf8").finish(),
+            Repr::OsStr(err) => err.fmt(f),
             Repr::Os(errno) => f.debug_struct("Os")
                 .field("code", &errno)
                 .field("msg", &sys::strerror(errno))
                 .finish(),
-            //Repr::AddrInfo(err) => f.fmt(err),
+            //Repr::AddrInfo(err) => err.fmt(f),
         }
     }
 }
@@ -80,8 +84,9 @@ impl fmt::Display for Error {
             Repr::UnexpectedEof => f.write_str("unexpected eof"),
             Repr::WriteZero => f.write_str("write zero"),
             Repr::Utf8 => f.write_str("stream did not contain valid UTF-8"),
+            Repr::OsStr(err) => err.fmt(f),
             Repr::Os(errno) => f.write_str(&sys::strerror(errno)),
-            //Repr::AddrInfo(err) => f.fmt(err),
+            //Repr::AddrInfo(err) => err.fmt(f),
         }
     }
 }
@@ -89,9 +94,18 @@ impl fmt::Display for Error {
 impl core::error::Error for Error {}
 
 impl From<Utf8Error> for Error {
-    fn from(_f: Utf8Error) -> Error {
+    fn from(_value: Utf8Error) -> Error {
         Error {
             repr: Repr::Utf8
+        }
+    }
+}
+
+
+impl From<OsStrError> for Error {
+    fn from(value: OsStrError) -> Error {
+        Error {
+            repr: Repr::OsStr(value)
         }
     }
 }
