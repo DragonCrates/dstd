@@ -24,7 +24,7 @@ fn opts_to_flags(opts: &OpenOptions) -> c_int {
 
 pub fn open(name: &OsStr, opts: &OpenOptions) -> Result<c_int> {
     let flags = opts_to_flags(opts);
-    let ret = unsafe { libc::open(name.as_ptr(), flags) };
+    let ret = unsafe { libc::open(name.as_ptr(), flags, 0o777) };
     if ret == -1 { return Err(Error::last_os_error()); }
     Ok(ret)
 }
