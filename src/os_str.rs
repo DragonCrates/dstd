@@ -109,6 +109,13 @@ impl OsStr {
     fn to_os_string(&self) -> OsString {
         unsafe { OsString::new_unchecked(self.inner.to_vec()) }
     }
+
+    /// Constructs a new `OsStr` reference by using a provided buffer
+    ///
+    /// If buffer size was not enough, it allocates and returns `Cow::Owned`
+    pub fn from_str_with<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
+        from_str_with(s, buf)
+    }
 }
 
 impl ToOwned for OsStr {
@@ -201,10 +208,7 @@ impl fmt::Display for OsUtf8Error {
 
 impl Error for OsUtf8Error {}
 
-/// Constructs a new `OsStr` reference by using a stack buffer
-///
-/// If buffer size was not enough, it allocates and returns `Cow::Owned`
-pub(crate) fn str_to_os<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
+fn from_str_with<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
     #[cfg(unix)]
     let len = s.len()+1;
     #[cfg(windows)]
