@@ -1,5 +1,6 @@
 extern crate alloc;
 use alloc::borrow::Cow;
+use alloc::string::String;
 
 use crate::os_str::{OsChar, OsStr, OsStrError};
 
@@ -20,5 +21,11 @@ impl<'a> Path<'a> {
 impl<'a> From<&'a str> for Path<'a> {
     fn from(value: &'a str) -> Path<'a> {
         Path::Str(value)
+    }
+}
+
+impl<'a> From<&'a String> for Path<'a> {
+    fn from(value: &'a String) -> Path<'a> {
+        Path::Str(value.as_str())
     }
 }
