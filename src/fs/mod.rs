@@ -77,11 +77,11 @@ pub struct File {
 
 impl File {
     pub fn create<'a, P: Into<Path<'a>>>(name: P) -> Result<File> {
-        File::options().read(true).write(true).create(true).open(name)
+        File::options().write(true).create(true).truncate(true).open(name)
     }
 
     pub fn create_new<'a, P: Into<Path<'a>>>(name: P) -> Result<File> {
-        File::options().read(true).write(true).create_new(true).open(name)
+        File::options().write(true).create_new(true).open(name)
     }
 
     pub fn open<'a, P: Into<Path<'a>>>(name: P) -> Result<File> {
