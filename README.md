@@ -4,6 +4,7 @@ Lightweight and feature-complete std replacement
 New types that do not exist in std:
 - `dstd::ffi::OsStr` represents a null-terminated C string in platform encoding, making it much easier to work with windows functions. Also, it is serializable, and is not opaque
 - `dstd::time::FormatTime` represents a broken-down representation of `SystemTime`, suitable for human-readable output (`struct tm`/`SYSTEMTIME` in C)
+- `dstd::rand::RandomDevice` is a secure random source provided by the OS
 
 Advantages over std:
 - Much smaller binary sizes! Only 4872 bytes for helloworld, almost matches C (`aarch64-linux-android`, full lto, strip = true). Recommended for cdylib crates
