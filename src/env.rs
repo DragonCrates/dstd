@@ -1,6 +1,8 @@
 //! Process environment functions
 
-use crate::prelude::{String, ToString};
+extern crate alloc;
+use alloc::string::{String, ToString};
+
 use crate::os_str::{OsStr, OsChar};
 
 // TODO windows.rs unix.rs

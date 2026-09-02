@@ -3,8 +3,10 @@
 use core::ptr;
 use core::ffi::{c_int, c_long, c_ulong, c_void};
 
+extern crate alloc;
+use alloc::boxed::Box;
+
 use crate::io::Error;
-use crate::prelude::Box;
 
 use super::ThreadInit;
 

@@ -1,8 +1,9 @@
 use core::cell::UnsafeCell;
 use core::time::Duration;
 
-use crate::sync::Arc;
-use crate::prelude::Box;
+extern crate alloc;
+use alloc::sync::Arc;
+use alloc::boxed::Box;
 
 #[cfg(unix)]
 crate::block! {

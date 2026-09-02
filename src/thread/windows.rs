@@ -3,9 +3,11 @@
 use core::ptr;
 use core::mem;
 
+extern crate alloc;
+use alloc::boxed::Box;
+
 use crate::sys::windows::types::*;
 use crate::io::{Error, CloseHandle};
-use crate::prelude::Box;
 
 use super::ThreadInit;
 
