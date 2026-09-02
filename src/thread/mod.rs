@@ -17,6 +17,9 @@ crate::block! {
     use windows as sys;
 }
 
+mod tls;
+pub use tls::LocalKey;
+
 /// Creates a new thread
 pub fn spawn<F, T>(f: F) -> JoinHandle<T>
 where
@@ -55,7 +58,7 @@ impl<T> JoinHandle<T> {
         ret.take().expect("thread was cancelled")
     }
 
-    // TODO: as handle, as pthread_t
+    // TODO: as handle, as pthread_t, is_finished, join with error
 }
 
 /// Returns the amount of available processor cores
