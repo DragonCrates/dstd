@@ -4,7 +4,7 @@ use core::mem::ManuallyDrop;
 use super::Once;
 
 /// A value which is initialized on the first access
-pub struct LazyLock<T, F> {
+pub struct LazyLock<T, F = fn() -> T> {
     init: Once,
     data: UnsafeCell<Data<T, F>>,
 }
@@ -14,7 +14,10 @@ union Data<T, F> {
     value: ManuallyDrop<T>,
 }
 
-impl<T, F: FnOnce() -> T> LazyLock<T, F> {
+impl<T, F> LazyLock<T, F>
+where
+    F: FnOnce() -> T
+{
     /// Creates a new `LazyLock`
     pub const fn new(f: F) -> LazyLock<T, F> {
         LazyLock {
