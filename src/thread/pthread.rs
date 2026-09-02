@@ -11,11 +11,7 @@ use super::ThreadInit;
 crate::cfg_if! {
     if #[cfg(any(target_os = "linux", target_os = "android"))] {
         pub type pthread_t = c_ulong;
-
-        #[repr(C)]
-        pub struct pthread_attr_t {
-            reserved: [u8; 16],
-        }
+        pub type pthread_attr_t = c_void;
     }
 }
 
@@ -59,7 +55,7 @@ pub struct JoinHandle(Option<pthread_t>);
 
 impl JoinHandle {
     pub fn join(mut self) {
-        let thread = self.0.take().expect("attempt to join an already joined thread");
+        let thread = self.0.take().unwrap();
         let ret = unsafe { pthread_join(thread, ptr::null_mut()) };
         assert!(ret == 0, "pthread_join failed: {}", Error::from_raw_os_error(ret));
     }
