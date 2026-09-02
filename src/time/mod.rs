@@ -94,7 +94,7 @@ impl SystemTime {
 }
 
 /// Formatted time structure
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FormatTime {
     /// Year
     pub year: i32,
