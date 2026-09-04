@@ -59,8 +59,24 @@ pub use crate::alloc::System as __System;
 pub use crate::panic::panic as __panic;
 
 /// Defines a main function for your crate
+/// # Usage
+/// First, set up your Cargo.toml:
+/// ```toml
+/// [profile.dev]
+/// panic = "abort"
 ///
-/// See the [module level](crate) doc for example
+/// [profile.release]
+/// # You have to disable panic unwinding because unwinding is not supported without std
+/// panic = "abort"
+/// # Other recommended options
+/// lto = "thin"
+/// strip = true
+/// ```
+/// Then, follow this example:
+/// ```
+#[doc = include_str!("../examples/helloworld.rs")]
+/// ```
+/// After that, you are all set
 #[macro_export]
 macro_rules! main {
     ($name:ident) => {

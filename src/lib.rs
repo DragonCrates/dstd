@@ -2,32 +2,10 @@
 //! Lightweight and feature-complete std replacement
 //!
 //! API should be somewhat compatible to that of std, but don't expect it to be a drop-in replacement
-//! # Usage
-//! Set up your Cargo.toml:
-//! ```
-//! [profile.dev]
-//! panic = "abort"
 //!
-//! [profile.release]
-//! panic = "abort"
-//! ```
-//! Then, follow this example:
-//! ```
-//! #![no_std]
-//! #![no_main]
-//! use dstd::prelude::*;
-//!
-//! dstd::main!(main);
-//! fn main() {
-//!     println!("Hello world");
-//! }
-//! ```
-//!
-//! After that, you are all set
+//! For usage instructions, check documentation for [`dstd::main`](main)
 
 #![no_std]
-
-#![allow(clippy::needless_return)]
 
 mod cfg_if;
 pub(crate) use cfg_if::{block, cfg_if};
@@ -40,19 +18,20 @@ pub(crate) mod sys;
 // udp, unix sockets, tcp connect
 // command spawn, pipes
 
-pub mod io;
-pub mod fs;
-pub mod net;
-pub mod thread;
-pub mod time;
-pub mod sync;
-pub mod process;
-pub mod prelude;
-pub mod init;
+//pub mod collections;
 pub mod env;
+pub mod fs;
+pub mod init;
+pub mod io;
+pub mod net;
 pub mod os_str;
 pub mod path;
+pub mod prelude;
+pub mod process;
 pub mod rand;
+pub mod sync;
+pub mod thread;
+pub mod time;
 
 // Link to libc on Linux
 #[cfg(any(target_os = "linux", target_os = "android"))]
