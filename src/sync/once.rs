@@ -19,6 +19,13 @@ impl Once {
         }
     }
 
+    pub(crate) const fn new_complete() -> Once {
+        Once {
+            inited: AtomicBool::new(true),
+            futex: Futex::new(),
+        }
+    }
+
     /// Performs the initialization only once
     pub fn call_once<F: FnOnce()>(&self, f: F) {
         if !self.inited.load(Acquire) {
@@ -34,6 +41,10 @@ impl Once {
     /// Returns `true` if initializarion is completed
     pub fn is_completed(&self) -> bool {
         self.inited.load(Acquire)
+    }
+
+    pub(crate) fn is_completed_mut(&mut self) -> bool {
+        *self.inited.get_mut()
     }
 }
 

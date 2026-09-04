@@ -20,6 +20,9 @@ pub use mutex::{Mutex, MutexGuard};
 mod once;
 pub use once::Once;
 
+mod oncelock;
+pub use oncelock::OnceLock;
+
 mod lazylock;
 pub use lazylock::LazyLock;
 
