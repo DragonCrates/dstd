@@ -187,15 +187,15 @@ impl SocketAddrExt for SocketAddr {
             let addr = unsafe { addr._in };
             let ip = Ipv4Addr::from_octets(addr.sin_addr.s_addr.to_ne_bytes());
             let port = u16::from_be(addr.sin_port);
-            return SocketAddr::V4(SocketAddrV4::new(ip, port));
+            SocketAddr::V4(SocketAddrV4::new(ip, port))
         } else if family == AF_INET6 {
             let addr = unsafe { addr._in6 };
             let ip = Ipv6Addr::from_octets(addr.sin6_addr.s6_addr);
             let port = u16::from_be(addr.sin6_port);
-            return SocketAddr::V6(SocketAddrV6::new(ip, port, addr.sin6_flowinfo, addr.sin6_scope_id));
+            SocketAddr::V6(SocketAddrV6::new(ip, port, addr.sin6_flowinfo, addr.sin6_scope_id))
         } else {
             // Fail, return fallback address...
-            return SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0));
+            SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0))
         }
     }
     fn to_sockaddr(&self) -> sockaddr {

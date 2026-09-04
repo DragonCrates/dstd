@@ -19,11 +19,10 @@ pub fn tls_alloc(destructor: extern "C" fn(*mut c_void)) -> Key {
 }
 
 pub fn tls_get_value(key: Key) -> *mut c_void {
-    let ret = unsafe { pthread_getspecific(key) };
-    ret
+    unsafe { pthread_getspecific(key) }
 }
 
 pub fn tls_set_value(key: Key, value: *mut c_void) {
-    let ret = unsafe { pthread_setspecific(key, value as *mut c_void) };
+    let ret = unsafe { pthread_setspecific(key, value) };
     assert!(ret == 0, "invalid TSD key");
 }

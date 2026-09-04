@@ -39,7 +39,7 @@ pub enum Repr {
 impl Error {
     /// Retrieves the last OS error
     pub fn last_os_error() -> Error {
-        return Error { repr: Repr::Os(sys::last_os_error()) };
+        Error { repr: Repr::Os(sys::last_os_error()) }
     }
 
     /// Constructs a new error from a raw OS error

@@ -100,7 +100,7 @@ impl<T: Copy> LocalKey<Cell<T>> {
 }
 
 // TODO: per comment in Bionic,
-/**
+/*
  * [pthread_key_create(3)](https://man7.org/linux/man-pages/man3/pthread_key_create.3p.html)
  * creates a key for thread-specific data.
  *

@@ -46,7 +46,7 @@ impl Futex {
             // Never happens
             UNLOCKED => panic!("attempt to unlock an unlocked mutex"),
             // No need to syscall if there were no waiters
-            LOCKED => return,
+            LOCKED => {},
             // Has waiters, do wake
             CONTENDED => futex_wake(&self.0),
             // Unreachable, do nothing
