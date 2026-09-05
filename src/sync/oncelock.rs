@@ -165,9 +165,9 @@ impl<T: fmt::Debug> fmt::Debug for OnceLock<T> {
     }
 }
 
-impl<T> Clone for OnceLock<T> {
+impl<T: Clone> Clone for OnceLock<T> {
     fn clone(&self) -> OnceLock<T> {
-        self.get().cloned().map_or_default(OnceLock::from)
+        self.get().cloned().map(OnceLock::from).unwrap_or_default()
     }
 }
 
