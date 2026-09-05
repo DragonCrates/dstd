@@ -38,6 +38,14 @@ impl Once {
         }
     }
 
+    pub(crate) fn call_once_mut<F: FnOnce()>(&mut self, f: F) {
+        let inited = self.inited.get_mut();
+        if !*inited {
+            f();
+            *inited = true;
+        }
+    }
+
     /// Returns `true` if initializarion is completed
     pub fn is_completed(&self) -> bool {
         self.inited.load(Acquire)
