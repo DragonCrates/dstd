@@ -344,7 +344,7 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     () => {
-        println!("");
+        $crate::println!("");
     };
     ($($arg:tt)*) => {
         $crate::print!("{}\n", format_args!($($arg)*))
@@ -364,7 +364,7 @@ macro_rules! eprint {
 #[macro_export]
 macro_rules! eprintln {
     () => {
-        eprintln!("")
+        $crate::eprintln!("")
     };
     ($($arg:tt)*) => {
         $crate::eprint!("{}\n", format_args!($($arg)*))
