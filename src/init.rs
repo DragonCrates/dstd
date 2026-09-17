@@ -74,7 +74,7 @@ pub use crate::panic::panic as __panic;
 /// ```
 /// Then, follow this example:
 /// ```
-#[doc = include_str!("../examples/helloworld.rs")]
+#[doc = include_str!("../examples/examples/helloworld.rs")]
 /// ```
 /// After that, you are all set
 #[macro_export]

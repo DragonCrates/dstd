@@ -9,9 +9,3 @@ description = "Lightweight std replacement"
 readme = "README.md"
 repository = "https://github.com/Neltharion01/dstd"
 keywords = ["no_std"]
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"

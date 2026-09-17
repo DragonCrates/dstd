@@ -1,0 +1,13 @@
+[package]
+name = "examples-test"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dstd = { version = "0.1.0", path = ".." }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
