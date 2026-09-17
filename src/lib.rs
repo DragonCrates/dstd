@@ -18,7 +18,7 @@ pub(crate) mod sys;
 // udp, unix sockets, tcp connect
 // command spawn, pipes
 
-//pub mod collections;
+pub mod collections;
 pub mod env;
 pub mod fs;
 pub mod init;
