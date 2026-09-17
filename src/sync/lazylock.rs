@@ -2,6 +2,7 @@ use core::cell::UnsafeCell;
 use core::fmt;
 use core::mem::ManuallyDrop;
 use core::ops::{Deref, DerefMut};
+use core::panic::{RefUnwindSafe, UnwindSafe};
 
 use super::Once;
 
@@ -134,3 +135,7 @@ impl<T, F> From<T> for LazyLock<T, F> {
 // to not impl `Sync` for `F`.
 unsafe impl<T: Send + Sync, F: Send> Sync for LazyLock<T, F> {}
 // auto-derived `Send` impl is OK.
+
+// Technically useless, because we don't have unwinding
+impl<T: RefUnwindSafe + UnwindSafe, F: UnwindSafe> RefUnwindSafe for LazyLock<T, F> {}
+impl<T: UnwindSafe, F: UnwindSafe> UnwindSafe for LazyLock<T, F> {}
