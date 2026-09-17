@@ -73,7 +73,7 @@ pub use crate::panic::panic as __panic;
 /// strip = true
 /// ```
 /// Then, follow this example:
-/// ```
+/// ```ignore
 #[doc = include_str!("../examples/examples/helloworld.rs")]
 /// ```
 /// After that, you are all set
