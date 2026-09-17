@@ -23,4 +23,4 @@ pub use alloc::boxed::Box;
 pub use self::ambiguous_macros_only::vec;
 
 #[doc(no_inline)]
-pub use crate::{print, println, eprint, eprintln, dbg};
+pub use crate::{print, println, eprint, eprintln, dbg, thread_local};
