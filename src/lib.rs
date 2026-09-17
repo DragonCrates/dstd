@@ -8,7 +8,7 @@
 #![no_std]
 
 mod cfg_if;
-pub(crate) use cfg_if::{block, cfg_if};
+pub(crate) use cfg_if::cfg_if;
 
 pub(crate) mod alloc;
 pub(crate) mod panic;
@@ -47,3 +47,9 @@ unsafe extern "C" {}
 #[cfg(windows)]
 #[link(name = "synchronization")]
 unsafe extern "C" {}
+
+/// Defines a block that can be configured-out entirely
+macro_rules! block {
+    ($($args:tt)*) => { $($args)* };
+}
+pub(crate) use block;

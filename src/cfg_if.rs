@@ -66,9 +66,3 @@ macro_rules! cfg_if {
     };
 }
 pub(crate) use cfg_if;
-
-/// Defines a block that can be configured-out entirely
-macro_rules! block {
-    ($($args:tt)*) => { $($args)* };
-}
-pub(crate) use block;
