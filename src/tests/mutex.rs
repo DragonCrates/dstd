@@ -28,7 +28,7 @@ fn mutex_test() {
         t.join();
     }
 
-    assert_eq!(max, *counter.lock());
+    assert_eq!(times * ncpu, *counter.lock());
 
     //println!("Counter value is: {}", *counter_guard);
 }
