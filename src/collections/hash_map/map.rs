@@ -11,6 +11,7 @@ use alloc::vec::{Vec, IntoIter as VecIntoIter};
 
 use super::RandomState;
 
+/// A hash map implemented with linear probing and Robin-Hood hashing
 #[derive(Default)]
 pub struct HashMap<K, V> {
     entries: Vec<Option<Entry<K, V>>>,
@@ -39,6 +40,10 @@ fn calculate_capacity(cap: usize) -> usize {
 }
 
 impl<K, V> HashMap<K, V> {
+    /// Creates an empty `HashMap`.
+    ///
+    /// The map is initially allocated with no capacity and grows on the first
+    /// insertion.
     pub fn new() -> HashMap<K, V> {
         HashMap {
             entries: vec![],
@@ -47,6 +52,11 @@ impl<K, V> HashMap<K, V> {
         }
     }
 
+    /// Creates an empty `HashMap` with at least the specified capacity.
+    ///
+    /// The map will be able to hold at least `cap` elements without
+    /// reallocating. The internal table size is rounded up to a power of two,
+    /// with a minimum of 32 slots.
     pub fn with_capacity(cap: usize) -> HashMap<K, V> {
         let cap = calculate_capacity(cap);
         let mut entries = vec![];
@@ -58,14 +68,18 @@ impl<K, V> HashMap<K, V> {
         }
     }
 
+    /// Returns the number of elements in the map.
     pub fn len(&self) -> usize {
         self.len
     }
 
+    /// Returns `true` if the map contains no elements.
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
+    /// Clears the map, removing all key-value pairs. Keeps the allocated
+    /// capacity for reuse.
     pub fn clear(&mut self) {
         for e in &mut self.entries {
             *e = None;
@@ -73,6 +87,7 @@ impl<K, V> HashMap<K, V> {
         self.len = 0;
     }
 
+    /// Returns the number of elements the map can hold without reallocating. Actual count is slightly lower, because it reallocates once hitting max load factor
     pub fn capacity(&self) -> usize {
         self.entries.len()
     }
@@ -124,6 +139,8 @@ where
         let mut current = Entry { key, value, hash };
         let mut pos = self.desired_pos(hash);
         let mut dist = 0;
+        // Remembered position for the inserted entry
+        let mut key_pos = None;
         loop {
             let e = &mut self.entries[pos];
             if e.is_none() {
@@ -131,7 +148,7 @@ where
                 *e = Some(current);
                 // Successful insertion
                 self.len += 1;
-                return (pos, None);
+                return (key_pos.unwrap_or(pos), None);
             } else {
                 // Occupied slot
                 let e = e.as_mut().unwrap();
@@ -146,6 +163,10 @@ where
                 // Should swap?
                 if exist_dist < dist {
                     mem::swap(e, &mut current);
+                    // Remember the position, if this is the first swap...
+                    if key_pos.is_none() {
+                        key_pos = Some(pos);
+                    }
                     dist = exist_dist;
                 }
             }
@@ -155,6 +176,11 @@ where
         }
     }
 
+    /// Inserts a key-value pair into the map.
+    ///
+    /// If the map did not have this key present, `None` is returned. If the map
+    /// did have this key present, the value is updated and the old value is
+    /// returned
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         self.insert_helper(key, value).1
     }
@@ -195,6 +221,7 @@ where
         }
     }
 
+    /// Returns a reference to the value corresponding to the key
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -204,6 +231,7 @@ where
         Some(&self.entries[pos].as_ref().unwrap().value)
     }
 
+    /// Returns `true` if the map contains a value for the specified key
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -212,6 +240,7 @@ where
         self.get(key).is_some()
     }
 
+    /// Returns a mutable reference to the value corresponding to the key
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
@@ -261,6 +290,8 @@ where
         ret.value
     }
 
+    /// Removes a key from the map, returning the value at the key if the key
+    /// was previously in the map
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
@@ -270,6 +301,10 @@ where
         Some(self.remove_helper(pos))
     }
 
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, removes all pairs `(k, v)` for which `f(&k, &mut v)`
+    /// returns `false`. The elements are visited in unspecified order.
     pub fn retain<F: FnMut(&K, &mut V) -> bool>(&mut self, mut f: F) {
         let mut i = 0;
         while i < self.capacity() {
@@ -329,34 +364,49 @@ where
 // If we match C++ behavior (insert a default element) then it will be extremely confusing because immutable Index can't do that
 
 impl<K, V> HashMap<K, V> {
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation.
+    ///
+    /// Currently only `Entry::or_insert` is available on the returned entry.
     pub fn entry(&mut self, key: K) -> super::Entry<'_, K, V> {
         super::Entry::new(key, self)
     }
 
+    /// An iterator visiting all key-value pairs in unspecified order. The
+    /// iterator element type is `(&K, &V)`.
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter {
             iter: self.entries.iter(),
         }
     }
 
+    /// An iterator visiting all key-value pairs in unspecified order, with
+    /// mutable references to the values. The iterator element type is
+    /// `(&K, &mut V)`.
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut {
             iter: self.entries.iter_mut(),
         }
     }
 
+    /// An iterator visiting all keys in unspecified order. The iterator
+    /// element type is `&K`.
     pub fn keys(&self) -> Keys<'_, K, V> {
         Keys {
             iter: self.entries.iter(),
         }
     }
 
+    /// An iterator visiting all values in unspecified order. The iterator
+    /// element type is `&V`.
     pub fn values(&self) -> Values<'_, K, V> {
         Values {
             iter: self.entries.iter(),
         }
     }
 
+    /// An iterator visiting all values in unspecified order, with mutable
+    /// references to the values. The iterator element type is `&mut V`.
     pub fn values_mut(&mut self) -> ValuesMut<'_, K, V> {
         ValuesMut {
             iter: self.entries.iter_mut(),
@@ -393,6 +443,8 @@ impl<'a, K, V> IntoIterator for &'a mut HashMap<K, V> {
     }
 }
 
+/// An iterator over the key-value pairs of a `HashMap`. Created by
+/// [`HashMap::iter`].
 pub struct Iter<'a, K, V> {
     iter: SliceIter<'a, Option<Entry<K, V>>>
 }
@@ -409,6 +461,8 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
     }
 }
 
+/// An iterator over the key-value pairs of a `HashMap`, with mutable values.
+/// Created by [`HashMap::iter_mut`].
 pub struct IterMut<'a, K, V> {
     iter: SliceIterMut<'a, Option<Entry<K, V>>>
 }
@@ -425,6 +479,7 @@ impl<'a, K, V> Iterator for IterMut<'a, K, V> {
     }
 }
 
+/// An iterator over the keys of a `HashMap`. Created by [`HashMap::keys`].
 pub struct Keys<'a, K, V> {
     iter: SliceIter<'a, Option<Entry<K, V>>>
 }
@@ -441,6 +496,7 @@ impl<'a, K, V> Iterator for Keys<'a, K, V> {
     }
 }
 
+/// An iterator over the values of a `HashMap`. Created by [`HashMap::values`].
 pub struct Values<'a, K, V> {
     iter: SliceIter<'a, Option<Entry<K, V>>>
 }
@@ -457,6 +513,8 @@ impl<'a, K, V> Iterator for Values<'a, K, V> {
     }
 }
 
+/// An iterator over the values of a `HashMap`, with mutable references.
+/// Created by [`HashMap::values_mut`].
 pub struct ValuesMut<'a, K, V> {
     iter: SliceIterMut<'a, Option<Entry<K, V>>>
 }
@@ -473,6 +531,8 @@ impl<'a, K, V> Iterator for ValuesMut<'a, K, V> {
     }
 }
 
+/// An owning iterator over the key-value pairs of a `HashMap`. Created by
+/// [`IntoIterator`] or [`HashMap::into_iter`].
 pub struct IntoIter<K, V> {
     iter: VecIntoIter<Option<Entry<K, V>>>,
 }
