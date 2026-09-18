@@ -76,7 +76,7 @@ unsafe extern "C" {
     fn sysconf(name: c_int) -> c_long;
 }
 
-#[cfg(all(target_os = "linux", target_env = "gnu"))]
+#[cfg(all(target_os = "linux"))]
 const _SC_NPROCESSORS_ONLN: c_int = 84;
 #[cfg(target_os = "android")]
 const _SC_NPROCESSORS_ONLN: c_int = 0x0061;
