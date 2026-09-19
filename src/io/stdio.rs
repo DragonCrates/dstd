@@ -9,6 +9,8 @@ use crate::io::{Result, Error, Read, Write};
 use crate::sync::Mutex;
 
 #[cfg(windows)]
+use crate::sys::windows::WriteFile;
+#[cfg(windows)]
 use crate::sys::windows::types::*;
 #[cfg(unix)]
 use crate::sys::libc;
@@ -171,9 +173,9 @@ impl Write for RawStdio {
             if ret == 0 { return Err(Error::last_os_error()); }
             Ok(nw as usize)
         } else {
-            // Redirect
+            // Not a console
             let mut nw: DWORD = 0;
-            let ret = unsafe { io::WriteFile(
+            let ret = unsafe { WriteFile(
                 handle, // hFile
                 buf.as_ptr() as LPCVOID, // lpBuffer
                 buf.len() as DWORD, // nNumberOfBytesToWrite

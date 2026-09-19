@@ -1,32 +1,12 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
-#[cfg(windows)]
-use crate::sys::windows::types::*;
-
 pub(crate) mod stdio;
 pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
 mod error;
 pub use error::{Result, Error, RawError};
 
 use error::Repr;
-
-// TODO: move this to windows.rs
-#[cfg(windows)]
-unsafe extern "C" {
-    /// Writes data to the specified file or input/output (I/O) device.
-    pub(crate) fn WriteFile(
-        /* [in] */ hFile: HANDLE,
-        /* [in] */ lpBuffer: LPCVOID,
-        /* [in] */ nNumberOfBytesToWrite: DWORD,
-        /* [out, optional] */ lpNumberOfBytesWritten: LPDWORD,
-        /* [in, out, optional] */ lpOverlapped: LPOVERLAPPED,
-    ) -> BOOL;
-    /// Closes an open object handle.
-    pub(crate) fn CloseHandle(
-        /* [in] */ hObject: HANDLE
-    ) -> BOOL;
-}
 
 pub trait Read {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
@@ -41,6 +21,7 @@ pub trait Read {
     }
 
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<()> {
+        // TODO: improve this to write to uninitialized vec's area
         let mut init = buf.len();
         if buf.capacity() == 0 { buf.reserve(512); }
         buf.resize(buf.capacity(), 0);
@@ -79,8 +60,11 @@ pub enum SeekFrom {
 impl SeekFrom {
     pub(crate) fn to_flags(&self) -> (i64, i32) {
         match *self {
+            // FILE_BEGIN or SEEK_SET
             SeekFrom::Start(off) => (off as i64, 0),
+            // FILE_CURRENT or SEEK_CUR
             SeekFrom::Current(off) => (off, 1),
+            // FILE_END or SEEK_END
             SeekFrom::End(off) => (off, 2),
         }
     }
