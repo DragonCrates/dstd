@@ -1,5 +1,6 @@
 use core::alloc::{GlobalAlloc, Layout};
 
+// TODO: use HeapAlloc on windows
 unsafe extern "C" {
     fn malloc(size: usize) -> *mut u8;
     fn free(ptr: *mut u8);

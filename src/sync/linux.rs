@@ -46,6 +46,8 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32) {
 
     if ret == -1 {
         let err = unsafe { *errno::errno() };
+        // TODO: remove unneeded panics
+        // TODO: loop on EINTR
         match err {
             // EAGAIN - futex != expected
             // EINTR - interrupted by a signal

@@ -38,7 +38,7 @@ pub mod fcntl {
     pub const O_APPEND: c_int = 0o2000;
 }
 
-#[cfg(unix)]
+// TODO: migrate other functions here
 unsafe extern "C" {
     /// Open and possibly create a file
     pub fn open(path: *const u8, flags: c_int, ...) -> c_int;

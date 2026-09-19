@@ -10,6 +10,8 @@ use crate::sys::windows::types::*;
 #[cfg(unix)]
 use crate::sys::libc::{c_ssize_t, c_size_t};
 
+// TODO: windows.rs, unix.rs
+
 crate::cfg_if! {
     if #[cfg(windows)] {
         pub type Socket = SOCKET;
