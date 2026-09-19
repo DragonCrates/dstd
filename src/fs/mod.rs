@@ -110,3 +110,9 @@ impl Seek for File {
         sys::seek(self.handle, pos)
     }
 }
+
+impl Drop for File {
+    fn drop(&mut self) {
+        sys::close(self.handle);
+    }
+}

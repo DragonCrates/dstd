@@ -1,6 +1,6 @@
 use core::ptr;
 
-use crate::sys::windows::{CreateFileW, ReadFile, WriteFile, SetFilePointerEx};
+use crate::sys::windows::{CreateFileW, ReadFile, WriteFile, SetFilePointerEx, CloseHandle};
 use crate::sys::windows::types::*;
 
 use super::OpenOptions;
@@ -108,4 +108,8 @@ pub fn seek(handle: HANDLE, pos: SeekFrom) -> Result<u64> {
     ) };
     if ret == 0 { return Err(Error::last_os_error()); }
     Ok(new_file_pointer as u64)
+}
+
+pub fn close(handle: HANDLE) {
+    unsafe { CloseHandle(handle); }
 }

@@ -47,3 +47,7 @@ pub fn seek(fd: c_int, pos: SeekFrom) -> Result<u64> {
     if ret == -1 { return Err(Error::last_os_error()); }
     Ok(ret as u64)
 }
+
+pub fn close(fd: c_int) {
+    unsafe { libc::close(fd); }
+}
