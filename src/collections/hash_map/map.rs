@@ -1,6 +1,7 @@
 use core::borrow::Borrow;
 use core::fmt::{self, Debug};
 use core::hash::{Hash, BuildHasher};
+use core::iter::FusedIterator;
 use core::mem;
 use core::ops::Index;
 use core::slice::{Iter as SliceIter, IterMut as SliceIterMut};
@@ -19,6 +20,7 @@ pub struct HashMap<K, V> {
     hasher: RandomState,
 }
 
+#[derive(Clone)]
 struct Entry<K, V> {
     key: K,
     value: V,
@@ -305,6 +307,14 @@ where
     ///
     /// In other words, removes all pairs `(k, v)` for which `f(&k, &mut v)`
     /// returns `false`. The elements are visited in unspecified order.
+    /// # Example
+    /// ```
+    /// use dstd::collections::HashMap;
+    ///
+    /// let mut map: HashMap<i32, i32> = (0..8).map(|x| (x, x*10)).collect();
+    /// map.retain(|&k, _| k % 2 == 0);
+    /// assert_eq!(map.len(), 4);
+    /// ```
     pub fn retain<F: FnMut(&K, &mut V) -> bool>(&mut self, mut f: F) {
         let mut i = 0;
         while i < self.capacity() {
@@ -377,6 +387,7 @@ impl<K, V> HashMap<K, V> {
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter {
             iter: self.entries.iter(),
+            remain: self.len,
         }
     }
 
@@ -386,6 +397,7 @@ impl<K, V> HashMap<K, V> {
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut {
             iter: self.entries.iter_mut(),
+            remain: self.len,
         }
     }
 
@@ -394,6 +406,7 @@ impl<K, V> HashMap<K, V> {
     pub fn keys(&self) -> Keys<'_, K, V> {
         Keys {
             iter: self.entries.iter(),
+            remain: self.len,
         }
     }
 
@@ -402,6 +415,7 @@ impl<K, V> HashMap<K, V> {
     pub fn values(&self) -> Values<'_, K, V> {
         Values {
             iter: self.entries.iter(),
+            remain: self.len,
         }
     }
 
@@ -410,7 +424,22 @@ impl<K, V> HashMap<K, V> {
     pub fn values_mut(&mut self) -> ValuesMut<'_, K, V> {
         ValuesMut {
             iter: self.entries.iter_mut(),
+            remain: self.len,
         }
+    }
+}
+
+impl<K, V> FromIterator<(K, V)> for HashMap<K, V>
+where
+    K: Eq + Hash
+{
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let iter = iter.into_iter();
+        let mut map = HashMap::with_capacity(iter.size_hint().0);
+        for (k, v) in iter {
+            map.insert(k, v);
+        }
+        map
     }
 }
 
@@ -420,7 +449,8 @@ impl<K, V> IntoIterator for HashMap<K, V> {
 
     fn into_iter(self) -> IntoIter<K, V> {
         IntoIter {
-            iter: self.entries.into_iter()
+            iter: self.entries.into_iter(),
+            remain: self.len,
         }
     }
 }
@@ -445,106 +475,332 @@ impl<'a, K, V> IntoIterator for &'a mut HashMap<K, V> {
 
 /// An iterator over the key-value pairs of a `HashMap`. Created by
 /// [`HashMap::iter`].
+#[derive(Default, Clone)]
 pub struct Iter<'a, K, V> {
-    iter: SliceIter<'a, Option<Entry<K, V>>>
+    iter: SliceIter<'a, Option<Entry<K, V>>>,
+    remain: usize,
 }
 
 impl<'a, K, V> Iterator for Iter<'a, K, V> {
     type Item = (&'a K, &'a V);
 
     fn next(&mut self) -> Option<(&'a K, &'a V)> {
+        if self.remain == 0 { return None; }
         loop {
             if let Some(e) = self.iter.next()? {
+                self.remain -= 1;
+                return Some((&e.key, &e.value));
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remain, Some(self.remain))
+    }
+
+    fn count(self) -> usize {
+        self.remain
+    }
+
+    fn last(mut self) -> Option<(&'a K, &'a V)> {
+        if self.remain == 0 { return None; }
+        loop {
+            if let Some(e) = self.iter.next_back()? {
                 return Some((&e.key, &e.value));
             }
         }
     }
 }
 
+impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
+    fn len(&self) -> usize {
+        self.remain
+    }
+}
+
+impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
+
+impl<'a, K: Debug, V: Debug> fmt::Debug for Iter<'a, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let iter = self.iter.clone().filter_map(|i| i.as_ref()).map(|e| (&e.key, &e.value));
+        f.debug_list().entries(iter).finish()
+    }
+}
+
 /// An iterator over the key-value pairs of a `HashMap`, with mutable values.
 /// Created by [`HashMap::iter_mut`].
+#[derive(Default)]
 pub struct IterMut<'a, K, V> {
-    iter: SliceIterMut<'a, Option<Entry<K, V>>>
+    iter: SliceIterMut<'a, Option<Entry<K, V>>>,
+    remain: usize,
 }
 
 impl<'a, K, V> Iterator for IterMut<'a, K, V> {
     type Item = (&'a K, &'a mut V);
 
     fn next(&mut self) -> Option<(&'a K, &'a mut V)> {
+        if self.remain == 0 { return None; }
         loop {
             if let Some(e) = self.iter.next()? {
+                self.remain -= 1;
+                return Some((&e.key, &mut e.value));
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remain, Some(self.remain))
+    }
+
+    fn count(self) -> usize {
+        self.remain
+    }
+
+    fn last(mut self) -> Option<(&'a K, &'a mut V)> {
+        if self.remain == 0 { return None; }
+        loop {
+            if let Some(e) = self.iter.next_back()? {
                 return Some((&e.key, &mut e.value));
             }
         }
     }
 }
 
+impl<'a, K, V> ExactSizeIterator for IterMut<'a, K, V> {
+    fn len(&self) -> usize {
+        self.remain
+    }
+}
+
+impl<'a, K, V> FusedIterator for IterMut<'a, K, V> {}
+
+impl<'a, K: Debug, V: Debug> fmt::Debug for IterMut<'a, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let iter = self.iter.as_slice().iter().filter_map(|i| i.as_ref()).map(|e| (&e.key, &e.value));
+        f.debug_list().entries(iter).finish()
+    }
+}
+
 /// An iterator over the keys of a `HashMap`. Created by [`HashMap::keys`].
+#[derive(Default, Clone)]
 pub struct Keys<'a, K, V> {
-    iter: SliceIter<'a, Option<Entry<K, V>>>
+    iter: SliceIter<'a, Option<Entry<K, V>>>,
+    remain: usize,
 }
 
 impl<'a, K, V> Iterator for Keys<'a, K, V> {
     type Item = &'a K;
 
     fn next(&mut self) -> Option<&'a K> {
+        if self.remain == 0 { return None; }
         loop {
             if let Some(e) = self.iter.next()? {
+                self.remain -= 1;
+                return Some(&e.key);
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remain, Some(self.remain))
+    }
+
+    fn count(self) -> usize {
+        self.remain
+    }
+
+    fn last(mut self) -> Option<&'a K> {
+        if self.remain == 0 { return None; }
+        loop {
+            if let Some(e) = self.iter.next_back()? {
                 return Some(&e.key);
             }
         }
     }
 }
 
+impl<'a, K, V> ExactSizeIterator for Keys<'a, K, V> {
+    fn len(&self) -> usize {
+        self.remain
+    }
+}
+
+impl<'a, K, V> FusedIterator for Keys<'a, K, V> {}
+
+impl<'a, K: Debug, V: Debug> fmt::Debug for Keys<'a, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let iter = self.iter.clone().filter_map(|i| i.as_ref()).map(|e| &e.key);
+        f.debug_list().entries(iter).finish()
+    }
+}
+
 /// An iterator over the values of a `HashMap`. Created by [`HashMap::values`].
+#[derive(Default, Clone)]
 pub struct Values<'a, K, V> {
-    iter: SliceIter<'a, Option<Entry<K, V>>>
+    iter: SliceIter<'a, Option<Entry<K, V>>>,
+    remain: usize,
 }
 
 impl<'a, K, V> Iterator for Values<'a, K, V> {
     type Item = &'a V;
 
     fn next(&mut self) -> Option<&'a V> {
+        if self.remain == 0 { return None; }
         loop {
             if let Some(e) = self.iter.next()? {
+                self.remain -= 1;
+                return Some(&e.value);
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remain, Some(self.remain))
+    }
+
+    fn count(self) -> usize {
+        self.remain
+    }
+
+    fn last(mut self) -> Option<&'a V> {
+        if self.remain == 0 { return None; }
+        loop {
+            if let Some(e) = self.iter.next_back()? {
                 return Some(&e.value);
             }
         }
     }
 }
 
+impl<'a, K, V> ExactSizeIterator for Values<'a, K, V> {
+    fn len(&self) -> usize {
+        self.remain
+    }
+}
+
+impl<'a, K, V> FusedIterator for Values<'a, K, V> {}
+
+impl<'a, K: Debug, V: Debug> fmt::Debug for Values<'a, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let iter = self.iter.clone().filter_map(|i| i.as_ref()).map(|e| &e.value);
+        f.debug_list().entries(iter).finish()
+    }
+}
+
 /// An iterator over the values of a `HashMap`, with mutable references.
 /// Created by [`HashMap::values_mut`].
+#[derive(Default)]
 pub struct ValuesMut<'a, K, V> {
-    iter: SliceIterMut<'a, Option<Entry<K, V>>>
+    iter: SliceIterMut<'a, Option<Entry<K, V>>>,
+    remain: usize,
 }
 
 impl<'a, K, V> Iterator for ValuesMut<'a, K, V> {
     type Item = &'a mut V;
 
     fn next(&mut self) -> Option<&'a mut V> {
+        if self.remain == 0 { return None; }
         loop {
             if let Some(e) = self.iter.next()? {
+                self.remain -= 1;
+                return Some(&mut e.value);
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remain, Some(self.remain))
+    }
+
+    fn count(self) -> usize {
+        self.remain
+    }
+
+    fn last(mut self) -> Option<&'a mut V> {
+        if self.remain == 0 { return None; }
+        loop {
+            if let Some(e) = self.iter.next_back()? {
                 return Some(&mut e.value);
             }
         }
     }
 }
 
+impl<'a, K, V> ExactSizeIterator for ValuesMut<'a, K, V> {
+    fn len(&self) -> usize {
+        self.remain
+    }
+}
+
+impl<'a, K, V> FusedIterator for ValuesMut<'a, K, V> {}
+
+impl<'a, K: Debug, V: Debug> fmt::Debug for ValuesMut<'a, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let iter = self.iter.as_slice().iter().filter_map(|i| i.as_ref()).map(|e| &e.value);
+        f.debug_list().entries(iter).finish()
+    }
+}
+
 /// An owning iterator over the key-value pairs of a `HashMap`. Created by
 /// [`IntoIterator`] or [`HashMap::into_iter`].
+#[derive(Default)]
 pub struct IntoIter<K, V> {
     iter: VecIntoIter<Option<Entry<K, V>>>,
+    remain: usize,
 }
 
 impl<K, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
     fn next(&mut self) -> Option<(K, V)> {
+        if self.remain == 0 { return None; }
         loop {
             if let Some(e) = self.iter.next()? {
+                self.remain -= 1;
                 return Some((e.key, e.value));
             }
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remain, Some(self.remain))
+    }
+
+    fn count(self) -> usize {
+        self.remain
+    }
+
+    fn last(mut self) -> Option<(K, V)> {
+        if self.remain == 0 { return None; }
+        loop {
+            if let Some(e) = self.iter.next_back()? {
+                return Some((e.key, e.value));
+            }
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for IntoIter<K, V> {
+    fn len(&self) -> usize {
+        self.remain
+    }
+}
+
+impl<K, V> FusedIterator for IntoIter<K, V> {}
+
+impl<K: Clone, V: Clone> Clone for IntoIter<K, V> {
+    fn clone(&self) -> IntoIter<K, V> {
+        let new: Vec<_> = self.iter.as_slice().iter().cloned().filter(|i| i.is_some()).collect();
+        IntoIter {
+            iter: new.into_iter(),
+            remain: self.remain,
+        }
+    }
+}
+
+impl<K: Debug, V: Debug> fmt::Debug for IntoIter<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let iter = self.iter.as_slice().iter().filter_map(|i| i.as_ref()).map(|e| (&e.key, &e.value));
+        f.debug_list().entries(iter).finish()
     }
 }
