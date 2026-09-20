@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 use dstd::prelude::*;
-use dstd::time::{SystemTime, FormatTime, Instant};
+use dstd::time::{SystemTime, Instant};
 use dstd::thread;
 
 dstd::main!(main);
