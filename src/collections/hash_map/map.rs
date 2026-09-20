@@ -357,6 +357,14 @@ where
     }
 }
 
+impl<K: PartialEq, V: PartialEq> PartialEq for HashMap<K, V> {
+    fn eq(&self, other: &HashMap<K, V>) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<K: Eq, V: Eq> Eq for HashMap<K, V> {}
+
 impl<K, Q, V> Index<&Q> for HashMap<K, V>
 where
     K: Hash + Eq + Borrow<Q>,
