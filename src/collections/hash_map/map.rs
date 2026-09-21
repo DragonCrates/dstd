@@ -576,15 +576,15 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {
     fn len(&self) -> usize {
         self.remain
     }
 }
 
-impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
+impl<K, V> FusedIterator for Iter<'_, K, V> {}
 
-impl<'a, K: Debug, V: Debug> fmt::Debug for Iter<'a, K, V> {
+impl<K: Debug, V: Debug> fmt::Debug for Iter<'_, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let iter = self.iter.clone().filter_map(|i| i.as_ref()).map(|e| (&e.key, &e.value));
         f.debug_list().entries(iter).finish()
@@ -630,15 +630,15 @@ impl<'a, K, V> Iterator for IterMut<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for IterMut<'a, K, V> {
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
     fn len(&self) -> usize {
         self.remain
     }
 }
 
-impl<'a, K, V> FusedIterator for IterMut<'a, K, V> {}
+impl<K, V> FusedIterator for IterMut<'_, K, V> {}
 
-impl<'a, K: Debug, V: Debug> fmt::Debug for IterMut<'a, K, V> {
+impl<K: Debug, V: Debug> fmt::Debug for IterMut<'_, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let iter = self.iter.as_slice().iter().filter_map(|i| i.as_ref()).map(|e| (&e.key, &e.value));
         f.debug_list().entries(iter).finish()
@@ -683,15 +683,15 @@ impl<'a, K, V> Iterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Keys<'a, K, V> {
+impl<K, V> ExactSizeIterator for Keys<'_, K, V> {
     fn len(&self) -> usize {
         self.remain
     }
 }
 
-impl<'a, K, V> FusedIterator for Keys<'a, K, V> {}
+impl<K, V> FusedIterator for Keys<'_, K, V> {}
 
-impl<'a, K: Debug, V: Debug> fmt::Debug for Keys<'a, K, V> {
+impl<K: Debug, V: Debug> fmt::Debug for Keys<'_, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let iter = self.iter.clone().filter_map(|i| i.as_ref()).map(|e| &e.key);
         f.debug_list().entries(iter).finish()
@@ -736,15 +736,15 @@ impl<'a, K, V> Iterator for Values<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Values<'a, K, V> {
+impl<K, V> ExactSizeIterator for Values<'_, K, V> {
     fn len(&self) -> usize {
         self.remain
     }
 }
 
-impl<'a, K, V> FusedIterator for Values<'a, K, V> {}
+impl<K, V> FusedIterator for Values<'_, K, V> {}
 
-impl<'a, K: Debug, V: Debug> fmt::Debug for Values<'a, K, V> {
+impl<K: Debug, V: Debug> fmt::Debug for Values<'_, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let iter = self.iter.clone().filter_map(|i| i.as_ref()).map(|e| &e.value);
         f.debug_list().entries(iter).finish()
@@ -790,15 +790,15 @@ impl<'a, K, V> Iterator for ValuesMut<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for ValuesMut<'a, K, V> {
+impl<K, V> ExactSizeIterator for ValuesMut<'_, K, V> {
     fn len(&self) -> usize {
         self.remain
     }
 }
 
-impl<'a, K, V> FusedIterator for ValuesMut<'a, K, V> {}
+impl<K, V> FusedIterator for ValuesMut<'_, K, V> {}
 
-impl<'a, K: Debug, V: Debug> fmt::Debug for ValuesMut<'a, K, V> {
+impl<K: Debug, V: Debug> fmt::Debug for ValuesMut<'_, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let iter = self.iter.as_slice().iter().filter_map(|i| i.as_ref()).map(|e| &e.value);
         f.debug_list().entries(iter).finish()

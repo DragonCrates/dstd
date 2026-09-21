@@ -7,7 +7,7 @@ pub struct Entry<'a, K, V> {
     map: &'a mut HashMap<K, V>,
 }
 
-impl<'a, K, V> Entry<'a, K, V> {
+impl<K, V> Entry<'_, K, V> {
     pub(crate) fn new(key: K, map: &mut HashMap<K, V>) -> Entry<'_, K, V> {
         Entry { key, map }
     }

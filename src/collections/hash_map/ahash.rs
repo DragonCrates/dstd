@@ -122,8 +122,8 @@ impl Hasher for AHasher {
 
     #[inline]
     #[allow(clippy::collapsible_if)]
-    fn write(&mut self, input: &[u8]) {
-        let mut data = input;
+    fn write(&mut self, bytes: &[u8]) {
+        let mut data = bytes;
         let length = data.len() as u64;
         //Needs to be an add rather than an xor because otherwise it could be canceled with carefully formed input.
         self.buffer = self.buffer.wrapping_add(length).wrapping_mul(MULTIPLE);
