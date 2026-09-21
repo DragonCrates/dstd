@@ -131,6 +131,7 @@ where
     K: Hash + Eq
 {
     fn rehash_helper(&mut self, new_size: usize) {
+        // We have to construct a new RandomState on each rehash - otherwise they would become quadratic
         let new = HashMap::with_capacity(new_size);
         let old = mem::replace(self, new);
         debug_assert!(old.len <= self.load_capacity(), "new map can't hold current amount of elements");
@@ -853,7 +854,7 @@ impl<K, V> FusedIterator for IntoIter<K, V> {}
 
 impl<K: Clone, V: Clone> Clone for IntoIter<K, V> {
     fn clone(&self) -> IntoIter<K, V> {
-        let new: Vec<_> = self.iter.as_slice().iter().cloned().filter(|i| i.is_some()).collect();
+        let new: Vec<_> = self.iter.as_slice().iter().filter(|i| i.is_some()).cloned().collect();
         IntoIter {
             iter: new.into_iter(),
             remain: self.remain,
