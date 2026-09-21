@@ -1,11 +1,11 @@
-use core::cell::{UnsafeCell, Cell};
+use core::cell::Cell;
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
 extern crate alloc;
 use alloc::boxed::Box;
 
-use crate::sync::Once;
+use crate::sync::OnceLock;
 
 #[cfg(windows)]
 crate::block! {
@@ -20,15 +20,15 @@ crate::block! {
 }
 
 pub struct LocalKey<T> {
-    key: UnsafeCell<sys::Key>,
+    key: OnceLock<sys::Key>,
     value: PhantomData<T>,
     initializer: fn() -> T,
-    once: Once,
 }
 
 extern "C" fn destroy<T>(value: *mut c_void) {
     // No null pointer check because destructors only run for non null values
-    drop(unsafe { Box::from_raw(value as *mut T) });
+    let val = unsafe { Box::from_raw(value as *mut T) };
+    drop(val);
 }
 
 impl<T> LocalKey<T> {
@@ -36,32 +36,28 @@ impl<T> LocalKey<T> {
     #[doc(hidden)]
     pub const fn __new(f: fn() -> T) -> LocalKey<T> {
         LocalKey {
-            key: UnsafeCell::new(0),
+            key: OnceLock::new(),
             value: PhantomData,
             initializer: f,
-            once: Once::new(),
         }
     }
 
-    fn get_or_initialize(&self) -> *mut T {
-        // Initialize key, if not already
-        self.once.call_once(|| {
-            let key = self.key.get();
-            let new_key = sys::tls_alloc(destroy::<T>);
-            unsafe {
-                *key = new_key;
-            }
-        });
+    fn key(&self) -> sys::Key {
+        *self.key.get_or_init(|| {
+            sys::tls_alloc(destroy::<T>)
+        })
+    }
 
-        let key = unsafe { *self.key.get() };
+    fn value(&self) -> *mut T {
+        let key = self.key();
         sys::tls_get_value(key) as *mut T
     }
 
     pub fn with<R>(&self, f: impl FnOnce(&T) -> R) -> R {
-        let mut value_ptr = self.get_or_initialize();
+        let mut value_ptr = self.value();
         if value_ptr.is_null() {
             // Initialize value
-            let key = unsafe { *self.key.get() };
+            let key = self.key();
             let value = Box::new((self.initializer)());
             let value = Box::into_raw(value);
             sys::tls_set_value(key, value as *mut c_void);
@@ -76,10 +72,10 @@ impl<T> LocalKey<T> {
 // TODO: other Cell and RefCell methods
 impl<T: Copy> LocalKey<Cell<T>> {
     pub fn set(&self, value: T) {
-        let value_ptr = self.get_or_initialize();
-        // Was not initialized
+        let value_ptr = self.value();
         if value_ptr.is_null() {
-            let key = unsafe { *self.key.get() };
+            // Initialize
+            let key = self.key();
             let value = Box::new(value);
             let value = Box::into_raw(value);
             sys::tls_set_value(key, value as *mut c_void);
