@@ -27,10 +27,6 @@ struct Entry<K, V> {
     hash: u64,
 }
 
-fn is_power_of_two(n: usize) -> bool {
-    n > 0 && (n & (n - 1) == 0)
-}
-
 fn calculate_capacity(cap: usize) -> usize {
     if cap == 0 {
         0
@@ -39,6 +35,11 @@ fn calculate_capacity(cap: usize) -> usize {
     } else {
         usize::next_power_of_two(cap)
     }
+}
+
+fn load_capacity(cap: usize) -> usize {
+    // Approximated 0.9
+    cap - cap / 8
 }
 
 impl<K, V> HashMap<K, V> {
@@ -94,13 +95,17 @@ impl<K, V> HashMap<K, V> {
         self.entries.len()
     }
 
+    /// Amount of elements this map can hold taking max load factor into account
+    fn load_capacity(&self) -> usize {
+        load_capacity(self.capacity())
+    }
+
     fn should_resize(&self) -> bool {
-        // Approximated self.load_factor() > 0.9
-        self.len > self.capacity() - self.capacity() / 8
+        self.len > self.load_capacity()
     }
 
     fn mask(&self) -> usize {
-        debug_assert!(is_power_of_two(self.capacity()));
+        debug_assert!(self.capacity().is_power_of_two());
         self.capacity() - 1
     }
 
@@ -113,10 +118,51 @@ impl<K, V> HashMap<K, V> {
     }
 }
 
+fn resize_capacity(cap: usize) -> usize {
+    let mut new_size = calculate_capacity(cap);
+    if cap > load_capacity(new_size) {
+        new_size *= 2;
+    }
+    new_size
+}
+
 impl<K, V> HashMap<K, V>
 where
     K: Hash + Eq
 {
+    fn rehash_helper(&mut self, new_size: usize) {
+        let new = HashMap::with_capacity(new_size);
+        let old = mem::replace(self, new);
+        debug_assert!(old.len <= self.load_capacity(), "new map can't hold current amount of elements");
+        for (k, v) in old {
+            self.insert(k, v);
+        }
+    }
+
+    /// Reserves space for `n` elements
+    pub fn reserve(&mut self, n: usize) {
+        let new_size = resize_capacity(self.len + n);
+        if new_size != self.capacity() {
+            self.rehash_helper(new_size);
+        }
+    }
+
+    /// Shrinks capacity to `n` (can't shrink below `self.len()`)
+    pub fn shrink_to(&mut self, n: usize) {
+        let new_size = resize_capacity(self.len.max(n));
+        if new_size != self.capacity() {
+            self.rehash_helper(new_size);
+        }
+    }
+
+    /// Shrinks the map to lowest possible capacity
+    pub fn shrink_to_fit(&mut self) {
+        let new_size = resize_capacity(self.len);
+        if new_size != self.capacity() {
+            self.rehash_helper(new_size);
+        }
+    }
+
     fn insert_helper(&mut self, key: K, value: V) -> (usize, Option<V>) {
         // Make capacity
         if self.capacity() == 0 {
@@ -125,12 +171,7 @@ where
         } else if self.should_resize() {
             // Rehash
             debug_assert!(self.capacity() >= 32);
-            let mut new = HashMap::with_capacity(self.capacity() * 2);
-            mem::swap(self, &mut new);
-            for (k, v) in new {
-                self.insert(k, v);
-            }
-            // Rehash done
+            self.rehash_helper(self.capacity() * 2);
         }
 
         debug_assert!(self.capacity() >= 32);
@@ -478,6 +519,20 @@ impl<'a, K, V> IntoIterator for &'a mut HashMap<K, V> {
 
     fn into_iter(self) -> IterMut<'a, K, V> {
         self.iter_mut()
+    }
+}
+
+impl<K, V> Extend<(K, V)> for HashMap<K, V>
+where
+    K: Eq + Hash
+{
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        let iter = iter.into_iter();
+        let reserve = iter.size_hint().0;
+        self.reserve(reserve);
+        for (k, v) in iter {
+            self.insert(k, v);
+        }
     }
 }
 
