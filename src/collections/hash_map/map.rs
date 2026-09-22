@@ -14,10 +14,10 @@ use super::RandomState;
 
 /// A hash map implemented with linear probing and Robin-Hood hashing
 #[derive(Default)]
-pub struct HashMap<K, V> {
+pub struct HashMap<K, V, S = RandomState> {
     entries: Vec<Option<Entry<K, V>>>,
     len: usize,
-    hasher: RandomState,
+    hasher: S,
 }
 
 #[derive(Clone)]
@@ -37,13 +37,9 @@ fn calculate_capacity(cap: usize) -> usize {
     }
 }
 
-fn load_capacity(cap: usize) -> usize {
-    // Approximated 0.9
-    cap - cap / 8
-}
-
+// Methods that construct with the default RandomState
 impl<K, V> HashMap<K, V> {
-    /// Creates an empty `HashMap`.
+    /// Creates an empty `HashMap` with the default hasher
     ///
     /// The map is initially allocated with no capacity and grows on the first
     /// insertion.
@@ -61,13 +57,26 @@ impl<K, V> HashMap<K, V> {
     /// reallocating. The internal table size is rounded up to a power of two,
     /// with a minimum of 32 slots.
     pub fn with_capacity(cap: usize) -> HashMap<K, V> {
+        HashMap::with_capacity_and_hasher(cap, RandomState::new())
+    }
+}
+
+fn load_capacity(cap: usize) -> usize {
+    // Approximated 0.9
+    cap - cap / 8
+}
+
+// Methods which don't require any trait bounds
+impl<K, V, S> HashMap<K, V, S> {
+    /// Creates an empty `HashMap` with the specified capacity and hasher
+    pub fn with_capacity_and_hasher(cap: usize, hasher: S) -> HashMap<K, V, S> {
         let cap = calculate_capacity(cap);
         let mut entries = vec![];
         entries.resize_with(cap, Default::default);
         HashMap {
             entries,
             len: 0,
-            hasher: RandomState::new(),
+            hasher,
         }
     }
 
@@ -126,13 +135,15 @@ fn resize_capacity(cap: usize) -> usize {
     new_size
 }
 
-impl<K, V> HashMap<K, V>
+// Methods which require insertion
+impl<K, V, S> HashMap<K, V, S>
 where
-    K: Hash + Eq
+    K: Hash + Eq,
+    S: BuildHasher + Default,
 {
     fn rehash_helper(&mut self, new_size: usize) {
         // We have to construct a new RandomState on each rehash - otherwise they would become quadratic
-        let new = HashMap::with_capacity(new_size);
+        let new = HashMap::with_capacity_and_hasher(new_size, Default::default());
         let old = mem::replace(self, new);
         debug_assert!(old.len <= self.load_capacity(), "new map can't hold current amount of elements");
         for (k, v) in old {
@@ -229,6 +240,22 @@ where
         self.insert_helper(key, value).1
     }
 
+    pub(crate) fn get_mut_or_insert(&mut self, key: K, value: V) -> &mut V {
+        let pos = self.get_helper(&key);
+        if let Some(pos) = pos {
+            &mut self.entries[pos].as_mut().unwrap().value
+        } else {
+            let pos = self.insert_helper(key, value).0;
+            &mut self.entries[pos].as_mut().unwrap().value
+        }
+    }
+}
+
+// Methods that retrieve entries from the map (including remove, because it returns the removed entry)
+impl<K, V, S> HashMap<K, V, S>
+where
+    S: BuildHasher
+{
     fn get_helper<Q>(&self, key: &Q) -> Option<usize>
     where
         K: Borrow<Q>,
@@ -294,16 +321,20 @@ where
         Some(&mut self.entries[pos].as_mut().unwrap().value)
     }
 
-    pub(crate) fn get_mut_or_insert(&mut self, key: K, value: V) -> &mut V {
-        let pos = self.get_helper(&key);
-        if let Some(pos) = pos {
-            &mut self.entries[pos].as_mut().unwrap().value
-        } else {
-            let pos = self.insert_helper(key, value).0;
-            &mut self.entries[pos].as_mut().unwrap().value
-        }
+    /// Removes a key from the map, returning the value at the key if the key
+    /// was previously in the map
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        let pos = self.get_helper(key)?;
+        Some(self.remove_helper(pos))
     }
+}
 
+// Methods that delete entries from the map
+impl<K, V, S> HashMap<K, V, S> {
     /// Remove by slot index
     fn remove_helper(&mut self, idx: usize) -> V {
         // Perform backward shift deletion from idx to stop
@@ -332,17 +363,6 @@ where
         }
 
         ret.value
-    }
-
-    /// Removes a key from the map, returning the value at the key if the key
-    /// was previously in the map
-    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
-    where
-        K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized,
-    {
-        let pos = self.get_helper(key)?;
-        Some(self.remove_helper(pos))
     }
 
     /// Retains only the elements specified by the predicate.
@@ -374,7 +394,7 @@ where
     }
 }
 
-impl<K, V> Debug for HashMap<K, V>
+impl<K, V, S> Debug for HashMap<K, V, S>
 where
     K: Debug,
     V: Debug,
@@ -384,14 +404,16 @@ where
     }
 }
 
-impl<K, V> Clone for HashMap<K, V>
+impl<K, V, S> Clone for HashMap<K, V, S>
 where
     K: Clone + Hash + Eq,
     V: Clone,
+    S: BuildHasher + Default,
 {
-    fn clone(&self) -> HashMap<K, V> {
+    fn clone(&self) -> HashMap<K, V, S> {
         // We need to create a second map manually because RandomState should not be cloned
-        let mut new = HashMap::with_capacity(self.capacity());
+        // Otherwise we would go quadratic on reinsert
+        let mut new = HashMap::with_capacity_and_hasher(self.capacity(), Default::default());
         for (k, v) in self {
             new.insert(k.clone(), v.clone());
         }
@@ -399,18 +421,33 @@ where
     }
 }
 
-impl<K: PartialEq, V: PartialEq> PartialEq for HashMap<K, V> {
-    fn eq(&self, other: &HashMap<K, V>) -> bool {
-        self.iter().eq(other.iter())
+impl<K, V, S> PartialEq for HashMap<K, V, S>
+where
+    K: Hash + Eq,
+    V: PartialEq,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &HashMap<K, V, S>) -> bool {
+        if self.len != other.len { return false; }
+        for (k, v) in self {
+            match other.get(k) {
+                Some(o) => {
+                    if v != o { return false; }
+                }
+                None => return false,
+            }
+        }
+        true
     }
 }
 
-impl<K: Eq, V: Eq> Eq for HashMap<K, V> {}
+impl<K: Hash + Eq, V: Eq, S: BuildHasher> Eq for HashMap<K, V, S> {}
 
-impl<K, Q, V> Index<&Q> for HashMap<K, V>
+impl<K, Q, V, S> Index<&Q> for HashMap<K, V, S>
 where
     K: Hash + Eq + Borrow<Q>,
     Q: Hash + Eq + ?Sized,
+    S: BuildHasher,
 {
     type Output = V;
     fn index(&self, index: &Q) -> &V {
@@ -423,12 +460,13 @@ where
 // due to how rust uses IndexMut, this will always panic
 // If we match C++ behavior (insert a default element) then it will be extremely confusing because immutable Index can't do that
 
-impl<K, V> HashMap<K, V> {
+// Iterators and entry api
+impl<K, V, S> HashMap<K, V, S> {
     /// Gets the given key's corresponding entry in the map for in-place
     /// manipulation.
     ///
     /// Currently only `Entry::or_insert` is available on the returned entry.
-    pub fn entry(&mut self, key: K) -> super::Entry<'_, K, V> {
+    pub fn entry(&mut self, key: K) -> super::Entry<'_, K, V, S> {
         super::Entry::new(key, self)
     }
 
@@ -479,13 +517,14 @@ impl<K, V> HashMap<K, V> {
     }
 }
 
-impl<K, V> FromIterator<(K, V)> for HashMap<K, V>
+impl<K, V, S> FromIterator<(K, V)> for HashMap<K, V, S>
 where
-    K: Eq + Hash
+    K: Eq + Hash,
+    S: Default + BuildHasher,
 {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let iter = iter.into_iter();
-        let mut map = HashMap::with_capacity(iter.size_hint().0);
+        let mut map = HashMap::with_capacity_and_hasher(iter.size_hint().0, Default::default());
         for (k, v) in iter {
             map.insert(k, v);
         }
@@ -493,7 +532,7 @@ where
     }
 }
 
-impl<K, V> IntoIterator for HashMap<K, V> {
+impl<K, V, S> IntoIterator for HashMap<K, V, S> {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V>;
 
@@ -505,7 +544,7 @@ impl<K, V> IntoIterator for HashMap<K, V> {
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a HashMap<K, V> {
+impl<'a, K, V, S> IntoIterator for &'a HashMap<K, V, S> {
     type Item = (&'a K, &'a V);
     type IntoIter = Iter<'a, K, V>;
 
@@ -514,7 +553,7 @@ impl<'a, K, V> IntoIterator for &'a HashMap<K, V> {
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a mut HashMap<K, V> {
+impl<'a, K, V, S> IntoIterator for &'a mut HashMap<K, V, S> {
     type Item = (&'a K, &'a mut V);
     type IntoIter = IterMut<'a, K, V>;
 
@@ -523,9 +562,10 @@ impl<'a, K, V> IntoIterator for &'a mut HashMap<K, V> {
     }
 }
 
-impl<K, V> Extend<(K, V)> for HashMap<K, V>
+impl<K, V, S> Extend<(K, V)> for HashMap<K, V, S>
 where
-    K: Eq + Hash
+    K: Eq + Hash,
+    S: BuildHasher + Default,
 {
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         let iter = iter.into_iter();
