@@ -19,6 +19,8 @@ crate::block! {
     use unix as sys;
 }
 
+// TODO: 'static
+// TODO: LocalKey should only use the system allocator
 pub struct LocalKey<T> {
     key: OnceLock<sys::Key>,
     value: PhantomData<T>,
@@ -88,6 +90,10 @@ impl<T: Copy> LocalKey<Cell<T>> {
 
     pub fn get(&self) -> T {
         self.with(|cell| cell.get())
+    }
+
+    pub fn replace(&self, value: T) -> T {
+        self.with(|cell| cell.replace(value))
     }
 
     pub fn update(&self, f: impl FnOnce(T) -> T) {
