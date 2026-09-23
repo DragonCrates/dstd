@@ -20,6 +20,25 @@ crate::block! {
     use unix as sys;
 }
 
+/// A thread local storage (TLS) key
+///
+/// Method [`with`] yields a shared reference to the contained value. Use [`Cell`] or [`RefCell`] to obtain an exclusive reference
+/// # Example
+/// ```
+/// use core::cell::Cell;
+/// use dstd::thread_local;
+/// thread_local! {
+///     static COUNTER: Cell<usize> = Cell::new(0);
+/// }
+/// # Implementation notes
+/// This is implemented using `FlsGetValue` on Windows and `pthread_getspecific` on unix targets. Native TLS is not supported
+///
+/// That also means that you can't create more keys than platform allows, and some platforms have very small amount of available keys (`PTHREAD_KEYS_MAX` is 128 on Android)
+///
+/// If (for any reason) you need true native TLS, you can add the following C++ shim to your project:
+/// ```c++
+#[doc = include_str!("../examples/examples/tls.cpp")]
+/// ```
 pub struct LocalKey<T: 'static> {
     key: OnceLock<sys::Key>,
     value: PhantomData<T>,
@@ -106,29 +125,12 @@ impl<T: Copy> LocalKey<Cell<T>> {
     }
 }
 
-// TODO: per comment in Bionic,
-/*
- * [pthread_key_create(3)](https://man7.org/linux/man-pages/man3/pthread_key_create.3p.html)
- * creates a key for thread-specific data.
- *
- * There is a limit of `PTHREAD_KEYS_MAX` keys per process, but most callers
- * should just use the C or C++ `thread_local` storage specifier anyway. When
- * targeting new enough OS versions, the compiler will automatically use
- * ELF TLS; when targeting old OS versions the emutls implementation will
- * multiplex pthread keys behind the scenes, using one per library rather than
- * one per thread-local variable. If you are implementing the runtime for a
- * different language, you should consider similar implementation choices and
- * avoid a direct one-to-one mapping from thread locals to pthread keys.
- *
- * Returns 0 on success and returns an error number on failure.
- */
-// int pthread_key_create(pthread_key_t* _Nonnull __key_ptr, void (* _Nullable __key_destructor)(void* _Nullable));
-// We need just a TypeMap
-
 // TODO:
 // When a rust cdylib module is unloaded, destructors will point to unmapped memory
 // To avoid this, we should destroy all thread locals on module unload (via __cxa_atexit on linux/mac and atexit on windows)
 // This is not implemented yet
+// TODO:
+// We can multiplex keys into a Vec
 
 #[macro_export]
 macro_rules! thread_local {
