@@ -1,4 +1,4 @@
-use core::cell::Cell;
+use core::cell::{Cell, RefCell};
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
@@ -20,25 +20,20 @@ crate::block! {
     use unix as sys;
 }
 
-/// A thread local storage (TLS) key
+/// A thread local storage (TLS) key, instantiated with the [`crate::thread_local`] macro
 ///
-/// Method [`with`] yields a shared reference to the contained value. Use [`Cell`] or [`RefCell`] to obtain an exclusive reference
-/// # Example
-/// ```
-/// use core::cell::Cell;
-/// use dstd::thread_local;
-/// thread_local! {
-///     static COUNTER: Cell<usize> = Cell::new(0);
-/// }
+/// Method [`LocalKey::with`] yields a shared reference to the contained value. Use [`Cell`] or [`RefCell`] to obtain an exclusive reference
 /// # Implementation notes
-/// This is implemented using `FlsGetValue` on Windows and `pthread_getspecific` on unix targets. Native TLS is not supported
+/// This is implemented using `FlsGetValue` on Windows and `pthread_getspecific` on unix targets. Native TLS is not supported, and keys are not multiplexed
 ///
 /// That also means that you can't create more keys than platform allows, and some platforms have very small amount of available keys (`PTHREAD_KEYS_MAX` is 128 on Android)
+/// <details>
+/// <summary>If (for any reason) you need true native TLS, you can add the following C++ shim to your project:</summary>
 ///
-/// If (for any reason) you need true native TLS, you can add the following C++ shim to your project:
 /// ```c++
-#[doc = include_str!("../examples/examples/tls.cpp")]
+#[doc = include_str!("../../../examples/examples/tls.cpp")]
 /// ```
+/// </details>
 pub struct LocalKey<T: 'static> {
     key: OnceLock<sys::Key>,
     value: PhantomData<T>,
@@ -75,17 +70,35 @@ impl<T> LocalKey<T> {
         sys::tls_get_value(key) as *mut T
     }
 
+    fn init(&'static self, value: T) -> *mut T {
+        let value_ptr;
+        let key = self.key();
+        unsafe {
+            value_ptr = System.alloc(Layout::for_value(&value)) as *mut T;
+            value_ptr.write(value);
+        }
+        sys::tls_set_value(key, value_ptr as *mut c_void);
+        value_ptr
+    }
+
+    /// Acquires a reference to the stored value, initializing it if necessary
+    /// # Example
+    /// ```
+    /// use core::cell::Cell;
+    /// use dstd::thread_local;
+    /// thread_local! {
+    ///     static GREETING: String = "Hello dstd".to_string();
+    /// }
+    /// GREETING.with(|s| {
+    ///     assert_eq!(s, "Hello dstd");
+    /// });
+    /// ```
     pub fn with<R>(&'static self, f: impl FnOnce(&T) -> R) -> R {
         let mut value_ptr = self.value();
         if value_ptr.is_null() {
-            // Initialize value
-            let key = self.key();
+            // Initialize
             let value = (self.initializer)();
-            unsafe {
-                value_ptr = System.alloc(Layout::for_value(&value)) as *mut T;
-                value_ptr.write(value);
-            }
-            sys::tls_set_value(key, value_ptr as *mut c_void);
+            value_ptr = self.init(value);
         }
 
         let value_ref = unsafe { &*value_ptr };
@@ -93,35 +106,83 @@ impl<T> LocalKey<T> {
     }
 }
 
-// TODO: other Cell and RefCell methods
-impl<T: Copy> LocalKey<Cell<T>> {
+impl<T> LocalKey<Cell<T>> {
+    /// Sets the contained value, without running the initializer
     pub fn set(&'static self, value: T) {
-        let mut value_ptr = self.value();
+        let value_ptr = self.value();
         if value_ptr.is_null() {
             // Initialize
-            let key = self.key();
-            unsafe {
-                value_ptr = System.alloc(Layout::for_value(&value)) as *mut Cell<T>;
-                value_ptr.write(Cell::new(value));
-            }
-            sys::tls_set_value(key, value_ptr as *mut c_void);
-            return;
+            self.init(Cell::new(value));
+        } else {
+            // Already initialized
+            self.with(|cell| cell.set(value));
         }
-
-        // Already initialized
-        self.with(|cell| cell.set(value));
     }
 
-    pub fn get(&'static self) -> T {
+    /// Returns a copy of the contained value
+    pub fn get(&'static self) -> T
+    where
+        T: Copy
+    {
         self.with(|cell| cell.get())
     }
 
+    /// Takes the contained value, leaving `Default::default()` in its place
+    pub fn take(&'static self) -> T
+    where
+        T: Default
+    {
+        self.with(|cell| cell.take())
+    }
+
+    /// Replaces the contained value, returning the old value
     pub fn replace(&'static self, value: T) -> T {
         self.with(|cell| cell.replace(value))
     }
 
-    pub fn update(&'static self, f: impl FnOnce(T) -> T) {
+    /// Updates the contained value using a function
+    pub fn update(&'static self, f: impl FnOnce(T) -> T)
+    where
+        T: Copy
+    {
         self.set(f(self.get()));
+    }
+}
+
+impl<T> LocalKey<RefCell<T>> {
+    /// Acquires a reference to the contained value
+    pub fn with_borrow<R>(&'static self, f: impl FnOnce(&T) -> R) -> R {
+        self.with(|cell| f(&cell.borrow()))
+    }
+
+    /// Acquires a mutable reference to the contained value
+    pub fn with_borrow_mut<R>(&'static self, f: impl FnOnce(&mut T) -> R) -> R {
+        self.with(|cell| f(&mut cell.borrow_mut()))
+    }
+
+    /// Sets the contained value, without running the initializer
+    pub fn set(&'static self, value: T) {
+        let value_ptr = self.value();
+        if value_ptr.is_null() {
+            // Initialize
+            self.init(RefCell::new(value));
+        } else {
+            // Already initialized
+            self.with_borrow_mut(|v| *v = value);
+        }
+    }
+
+    /// Takes the contained value, leaving `Default::default()` in its place
+    pub fn take(&'static self) -> T
+    where
+        T: Default
+    {
+        self.with(|cell| cell.take())
+    }
+
+    /// Replaces the contained value, returning the old value
+    pub fn replace(&'static self, value: T) -> T {
+        self.with(|cell| cell.replace(value))
     }
 }
 
