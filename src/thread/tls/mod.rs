@@ -19,9 +19,8 @@ crate::block! {
     use unix as sys;
 }
 
-// TODO: 'static
 // TODO: LocalKey should only use the system allocator
-pub struct LocalKey<T> {
+pub struct LocalKey<T: 'static> {
     key: OnceLock<sys::Key>,
     value: PhantomData<T>,
     initializer: fn() -> T,
@@ -44,18 +43,18 @@ impl<T> LocalKey<T> {
         }
     }
 
-    fn key(&self) -> sys::Key {
+    fn key(&'static self) -> sys::Key {
         *self.key.get_or_init(|| {
             sys::tls_alloc(destroy::<T>)
         })
     }
 
-    fn value(&self) -> *mut T {
+    fn value(&'static self) -> *mut T {
         let key = self.key();
         sys::tls_get_value(key) as *mut T
     }
 
-    pub fn with<R>(&self, f: impl FnOnce(&T) -> R) -> R {
+    pub fn with<R>(&'static self, f: impl FnOnce(&T) -> R) -> R {
         let mut value_ptr = self.value();
         if value_ptr.is_null() {
             // Initialize value
@@ -73,7 +72,7 @@ impl<T> LocalKey<T> {
 
 // TODO: other Cell and RefCell methods
 impl<T: Copy> LocalKey<Cell<T>> {
-    pub fn set(&self, value: T) {
+    pub fn set(&'static self, value: T) {
         let value_ptr = self.value();
         if value_ptr.is_null() {
             // Initialize
@@ -88,15 +87,15 @@ impl<T: Copy> LocalKey<Cell<T>> {
         self.with(|cell| cell.set(value));
     }
 
-    pub fn get(&self) -> T {
+    pub fn get(&'static self) -> T {
         self.with(|cell| cell.get())
     }
 
-    pub fn replace(&self, value: T) -> T {
+    pub fn replace(&'static self, value: T) -> T {
         self.with(|cell| cell.replace(value))
     }
 
-    pub fn update(&self, f: impl FnOnce(T) -> T) {
+    pub fn update(&'static self, f: impl FnOnce(T) -> T) {
         self.set(f(self.get()));
     }
 }
