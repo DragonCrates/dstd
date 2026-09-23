@@ -35,7 +35,7 @@ extern "C" fn destroy<T>(value: *mut c_void) {
 impl<T> LocalKey<T> {
     /// Not a public api! Exposed only for the `thread_local!` macro
     #[doc(hidden)]
-    pub const fn __new(f: fn() -> T) -> LocalKey<T> {
+    pub const fn __dstd_macro_api_new(f: fn() -> T) -> LocalKey<T> {
         LocalKey {
             key: OnceLock::new(),
             value: PhantomData,
@@ -128,7 +128,7 @@ impl<T: Copy> LocalKey<Cell<T>> {
 macro_rules! thread_local {
     ($($(#[$m:meta])* $v:vis static $n:ident: $t:ty = $i:expr);* $(;)?) => {
         $(
-            $(#[$m])* $v static $n: $crate::thread::LocalKey<$t> = $crate::thread::LocalKey::__new(|| $i);
+            $(#[$m])* $v static $n: $crate::thread::LocalKey<$t> = $crate::thread::LocalKey::__dstd_macro_api_new(|| $i);
         )*
     }
 }
