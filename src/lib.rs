@@ -10,7 +10,6 @@
 mod cfg_if;
 pub(crate) use cfg_if::cfg_if;
 
-pub(crate) mod alloc;
 pub(crate) mod panic;
 pub(crate) mod sys;
 
@@ -18,6 +17,7 @@ pub(crate) mod sys;
 // udp, unix sockets, tcp connect
 // command spawn, pipes
 
+pub mod alloc;
 pub mod collections;
 pub mod env;
 pub mod fs;

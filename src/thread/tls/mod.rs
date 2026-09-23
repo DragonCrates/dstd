@@ -3,8 +3,9 @@ use core::ffi::c_void;
 use core::marker::PhantomData;
 
 extern crate alloc;
-use alloc::boxed::Box;
+use alloc::alloc::{Layout, GlobalAlloc};
 
+use crate::alloc::System;
 use crate::sync::OnceLock;
 
 #[cfg(windows)]
@@ -19,7 +20,6 @@ crate::block! {
     use unix as sys;
 }
 
-// TODO: LocalKey should only use the system allocator
 pub struct LocalKey<T: 'static> {
     key: OnceLock<sys::Key>,
     value: PhantomData<T>,
@@ -28,8 +28,10 @@ pub struct LocalKey<T: 'static> {
 
 extern "C" fn destroy<T>(value: *mut c_void) {
     // No null pointer check because destructors only run for non null values
-    let val = unsafe { Box::from_raw(value as *mut T) };
-    drop(val);
+    unsafe {
+        value.drop_in_place();
+        System.dealloc(value as *mut u8, Layout::new::<T>());
+    }
 }
 
 impl<T> LocalKey<T> {
@@ -59,10 +61,12 @@ impl<T> LocalKey<T> {
         if value_ptr.is_null() {
             // Initialize value
             let key = self.key();
-            let value = Box::new((self.initializer)());
-            let value = Box::into_raw(value);
-            sys::tls_set_value(key, value as *mut c_void);
-            value_ptr = value;
+            let value = (self.initializer)();
+            unsafe {
+                value_ptr = System.alloc(Layout::for_value(&value)) as *mut T;
+                value_ptr.write(value);
+            }
+            sys::tls_set_value(key, value_ptr as *mut c_void);
         }
 
         let value_ref = unsafe { &*value_ptr };
@@ -73,13 +77,15 @@ impl<T> LocalKey<T> {
 // TODO: other Cell and RefCell methods
 impl<T: Copy> LocalKey<Cell<T>> {
     pub fn set(&'static self, value: T) {
-        let value_ptr = self.value();
+        let mut value_ptr = self.value();
         if value_ptr.is_null() {
             // Initialize
             let key = self.key();
-            let value = Box::new(value);
-            let value = Box::into_raw(value);
-            sys::tls_set_value(key, value as *mut c_void);
+            unsafe {
+                value_ptr = System.alloc(Layout::for_value(&value)) as *mut Cell<T>;
+                value_ptr.write(Cell::new(value));
+            }
+            sys::tls_set_value(key, value_ptr as *mut c_void);
             return;
         }
 
