@@ -49,33 +49,6 @@ impl AHasher {
         }
     }
 
-    #[cfg(test)]
-    pub(crate) fn new_with_keys(key1: u128, key2: u128) -> AHasher {
-        const PI_U128X2: [u128; 2] = [
-            0x1319_8a2e_0370_7344_243f_6a88_85a3_08d3,
-            0x082e_fa98_ec4e_6c89_a409_3822_299f_31d0,
-        ];
-
-        let key1: [u64; 2] = (key1 ^ PI_U128X2[0]).convert();
-        let key2: [u64; 2] = (key2 ^ PI_U128X2[1]).convert();
-        AHasher {
-            buffer: key1[0],
-            pad: key1[1],
-            extra_keys: key2,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn test_with_keys(key1: u128, key2: u128) -> Self {
-        let key1: [u64; 2] = key1.convert();
-        let key2: [u64; 2] = key2.convert();
-        Self {
-            buffer: key1[0],
-            pad: key1[1],
-            extra_keys: key2,
-        }
-    }
-
     #[inline(always)]
     fn update(&mut self, new_data: u64) {
         self.buffer = folded_multiply(new_data ^ self.buffer, MULTIPLE);

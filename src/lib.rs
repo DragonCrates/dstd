@@ -33,9 +33,6 @@ pub mod sync;
 pub mod thread;
 pub mod time;
 
-#[cfg(test)]
-mod tests;
-
 // Link to libc on Linux
 #[cfg(any(target_os = "linux", target_os = "android"))]
 #[link(name = "c")]

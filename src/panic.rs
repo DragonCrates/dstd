@@ -2,6 +2,7 @@ use core::panic::{PanicInfo, PanicMessage};
 
 use crate::eprintln;
 
+// TODO: expose
 pub fn panic(info: &PanicInfo) -> ! {
     let message = info.message();
     let (file, line, column);

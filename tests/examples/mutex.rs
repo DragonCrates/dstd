@@ -1,14 +1,17 @@
+#![no_std]
+#![no_main]
+
 extern crate alloc;
 use alloc::vec;
 
-use crate::sync::{Arc, Mutex};
-use crate::thread;
+use dstd::sync::{Arc, Mutex};
+use dstd::thread;
+use dstd::println;
 
-/// Test that [`Mutex`] works as expected
-#[test]
-fn mutex_test() {
+dstd::main!(main);
+fn main() {
     let ncpu = thread::available_parallelism();
-    //println!("Number of threads: {ncpu}");
+    println!("Number of threads: {ncpu}");
 
     let max = 1_000_000;
     let times = max / ncpu;
@@ -28,7 +31,7 @@ fn mutex_test() {
         t.join();
     }
 
-    assert_eq!(times * ncpu, *counter.lock());
-
-    //println!("Counter value is: {}", *counter_guard);
+    let counter_guard = counter.lock();
+    assert_eq!(times * ncpu, *counter_guard);
+    println!("Counter value is: {}", *counter_guard);
 }

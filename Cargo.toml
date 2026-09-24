@@ -9,7 +9,3 @@ description = "Lightweight std replacement"
 readme = "README.md"
 repository = "https://github.com/Neltharion01/dstd"
 keywords = ["no_std"]
-
-[features]
-# Enable to run all ahash unit tests (usually not needed)
-ahash_long_running_tests = []
