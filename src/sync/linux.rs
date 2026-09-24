@@ -46,8 +46,6 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32) {
 
     if ret == -1 {
         let err = unsafe { *errno::errno() };
-        // TODO: remove unneeded panics
-        // TODO: loop on EINTR
         match err {
             // EAGAIN - futex != expected
             // EINTR - interrupted by a signal
@@ -71,5 +69,23 @@ pub fn futex_wake(futex: &AtomicU32) {
         )
     };
 
-    assert!(ret != -1, "futex_wake failed: {}", Error::last_os_error());
+    if ret == -1 {
+        panic!("futex_wake failed: {}", Error::last_os_error());
+    }
+}
+
+/// Wakes up all threads that are blocked on `futex_wait` on this futex
+pub fn futex_wake_all(futex: &AtomicU32) {
+    let ret = unsafe {
+        syscall(
+            SYS_futex,
+            futex,
+            FUTEX_WAKE | FUTEX_PRIVATE_FLAG,
+            i32::MAX as u32,
+        )
+    };
+
+    if ret == -1 {
+        panic!("futex_wake failed: {}", Error::last_os_error());
+    }
 }

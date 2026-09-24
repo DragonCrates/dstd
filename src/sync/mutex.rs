@@ -79,10 +79,16 @@ pub struct MutexGuard<'a, T> {
 /// `MutexGuard` is `Sync` when `T` is `Sync` (because `&MutexGuard<T>` is equivalent to `&T`)
 unsafe impl<T: Sync> Sync for MutexGuard<'_, T> {}
 
-impl<T> MutexGuard<'_, T> {
+impl<'a, T> MutexGuard<'a, T> {
     // safety: should only be called when mutex is locked
     unsafe fn new(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
         MutexGuard { mutex, __notsend: PhantomData }
+    }
+
+    pub(crate) fn into_mutex(self) -> &'a Mutex<T> {
+        let mtx = self.mutex;
+        drop(self);
+        mtx
     }
 }
 

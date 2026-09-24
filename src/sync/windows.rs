@@ -13,6 +13,7 @@ unsafe extern "C" {
     ) -> BOOL;
     /// Wakes one thread that is waiting for the value of an address to change.
     fn WakeByAddressSingle(/* [in] */ Address: PVOID);
+    fn WakeByAddressAll(/* [in] */ Address: PVOID);
 }
 
 pub fn futex_wait(futex: &AtomicU32, expected: u32) {
@@ -33,5 +34,11 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32) {
 pub fn futex_wake(futex: &AtomicU32) {
     unsafe {
         WakeByAddressSingle(futex.as_ptr() as PVOID);
+    }
+}
+
+pub fn futex_wake_all(futex: &AtomicU32) {
+    unsafe {
+        WakeByAddressAll(futex.as_ptr() as PVOID);
     }
 }
