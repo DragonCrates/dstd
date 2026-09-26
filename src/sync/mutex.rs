@@ -3,11 +3,11 @@ use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::fmt::{self, Debug};
 
-use super::Futex;
+use super::RawMutex;
 
 /// Mutex primitive, used to protect shared data
 pub struct Mutex<T> {
-    futex: Futex,
+    futex: RawMutex,
     value: UnsafeCell<T>,
 }
 
@@ -24,7 +24,7 @@ impl<T> Mutex<T> {
     /// Creates a new `Mutex`
     pub const fn new(t: T) -> Mutex<T> {
         Mutex {
-            futex: Futex::new(),
+            futex: RawMutex::new(),
             value: UnsafeCell::new(t),
         }
     }

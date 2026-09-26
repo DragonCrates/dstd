@@ -11,8 +11,8 @@ crate::block! {
     use windows::*;
 }
 
-mod futex;
-use futex::Futex;
+mod raw_mutex;
+use raw_mutex::RawMutex;
 
 mod mutex;
 pub use mutex::{Mutex, MutexGuard};

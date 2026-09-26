@@ -1,13 +1,13 @@
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering::{Relaxed, Acquire, Release};
 
-use super::Futex;
+use super::RawMutex;
 
 // TODO: make it use only one field
 /// A low-level synchronization primitive for one-time global execution
 pub struct Once {
     inited: AtomicBool,
-    futex: Futex,
+    futex: RawMutex,
 }
 
 impl Once {
@@ -15,14 +15,14 @@ impl Once {
     pub const fn new() -> Once {
         Once {
             inited: AtomicBool::new(false),
-            futex: Futex::new(),
+            futex: RawMutex::new(),
         }
     }
 
     pub(crate) const fn new_complete() -> Once {
         Once {
             inited: AtomicBool::new(true),
-            futex: Futex::new(),
+            futex: RawMutex::new(),
         }
     }
 
