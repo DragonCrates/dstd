@@ -1,16 +1,16 @@
-use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering::*;
 
-use super::{futex_wait, futex_wake, futex_wake_all, MutexGuard};
+use super::sys::*;
+use super::MutexGuard;
 
 pub struct Condvar {
-    word: AtomicU32
+    word: FutexWord
 }
 
 impl Condvar {
     pub const fn new() -> Condvar {
         Condvar {
-            word: AtomicU32::new(0)
+            word: FutexWord::new(0)
         }
     }
 

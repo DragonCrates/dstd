@@ -1,21 +1,20 @@
-use core::sync::atomic::AtomicU32;
-use core::sync::atomic::Ordering::{Relaxed, Acquire, Release};
+use core::sync::atomic::Ordering::*;
 
-use super::{futex_wait, futex_wake};
+use super::sys::*;
 
-const UNLOCKED: u32 = 0;
-const LOCKED: u32 = 1;
-const CONTENDED: u32 = 2;
+const UNLOCKED: MiniPrimitive = 0;
+const LOCKED: MiniPrimitive = 1;
+const CONTENDED: MiniPrimitive = 2;
 
 pub struct RawMutex {
-    word: AtomicU32
+    word: MiniFutex
 }
 
 impl RawMutex {
     /// Constructs a new mutex
     pub const fn new() -> RawMutex {
         RawMutex {
-            word: AtomicU32::new(UNLOCKED)
+            word: MiniFutex::new(UNLOCKED)
         }
     }
 

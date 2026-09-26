@@ -28,6 +28,11 @@ const FUTEX_WAIT: u32 = 0;
 const FUTEX_WAKE: u32 = 1;
 const FUTEX_PRIVATE_FLAG: u32 = 128;
 
+pub type FutexWord = AtomicU32;
+//pub type FutexPrimitive = u32;
+pub type MiniFutex = AtomicU32;
+pub type MiniPrimitive = u32;
+
 /// Waits for a `futex_wake` operation to wake us.
 ///
 /// Returns directly if the futex doesn't hold the expected value.

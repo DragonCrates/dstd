@@ -3,12 +3,12 @@
 #[cfg(any(target_os = "linux", target_os = "android"))]
 crate::block! {
     mod linux;
-    use linux::*;
+    use linux as sys;
 }
 #[cfg(target_os = "windows")]
 crate::block! {
     mod windows;
-    use windows::*;
+    use windows as sys;
 }
 
 mod raw_mutex;
@@ -33,4 +33,4 @@ pub use alloc::sync::{Arc, Weak};
 mod condvar;
 pub use condvar::Condvar;
 
-// TODO SmallFutex, mpsc, Barrier, Semaphore
+// TODO mpsc, Barrier, Semaphore
