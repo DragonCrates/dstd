@@ -29,9 +29,7 @@ impl Once {
     /// Performs the initialization only once
     pub fn call_once<F: FnOnce()>(&self, f: F) {
         let state = self.state.load(Acquire);
-        if state == COMPLETE {
-            return;
-        } else {
+        if state != COMPLETE {
             self.call_once_slow(state, f);
         }
     }
