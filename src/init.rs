@@ -82,10 +82,11 @@ macro_rules! main {
     ($name:ident) => {
         mod __dstd_main {
             use core::panic::PanicInfo;
-            use $crate::init::{Termination, __System, __panic};
+            use $crate::alloc::System;
+            use $crate::init::{Termination, __panic};
 
             #[global_allocator]
-            static GLOBAL_ALLOC: __System = __System;
+            static GLOBAL_ALLOC: System = System;
 
             #[panic_handler]
             fn panic_handler(info: &PanicInfo) -> ! {
