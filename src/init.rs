@@ -103,8 +103,8 @@ macro_rules! main {
             #[unsafe(no_mangle)]
             unsafe extern "C" fn rust_eh_personality() {}
 
-            // glibc and mingw targets need this
-            #[cfg(target_env = "gnu")]
+            // glibc, musl and mingw targets need this
+            #[cfg(any(target_env = "gnu", target_env = "musl"))]
             #[unsafe(no_mangle)]
             unsafe extern "C" fn _Unwind_Resume() {}
         }
