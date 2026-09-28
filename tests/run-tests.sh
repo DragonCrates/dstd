@@ -3,5 +3,5 @@ set -e
 
 cd examples
 for i in *.rs; do
-    cargo run --example ${i%.rs}
+    cargo run --example ${i%.rs} --release
 done
