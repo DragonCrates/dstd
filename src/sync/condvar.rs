@@ -32,10 +32,15 @@ impl Condvar {
 
     pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
         let value = self.word.load(Relaxed);
-        let mtx = guard.into_mutex();
         self.waiters.fetch_add(1, Relaxed);
+
+        // unlock mutex
+        let mtx = guard.into_mutex();
+
         futex_wait(&self.word, value);
         self.waiters.fetch_sub(1, Relaxed);
+
+        // lock mutex
         mtx.lock()
     }
 }
