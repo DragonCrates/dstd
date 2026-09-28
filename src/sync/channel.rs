@@ -16,7 +16,7 @@ use super::{Mutex, MutexGuard, Condvar};
 /// The channel has no close/drop-termination: blocking operations (`recv`,
 /// `wait`, `peek`) wait forever until data arrives, and [`Channel::iter`] is
 /// infinite.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Channel<T> {
     queue: Mutex<VecDeque<T>>,
     read_cond: Condvar,
@@ -80,19 +80,18 @@ impl<T> Channel<T> {
 
     /// Removes and returns an item from the queue. Returns `None` immediately if the channel is empty
     pub fn try_recv(&self) -> Option<T> {
-        if let Some(ret) = self.queue.lock().pop_front() {
+        let ret = self.queue.lock().pop_front();
+        if ret.is_some() {
             self.write_cond.notify_one();
-            return Some(ret);
-        } else {
-            return None;
         }
+        ret
     }
 
     /// Blocks until the channel holds at least one element. Does not consume anything
     pub fn wait(&self) {
         let mut queue = self.queue.lock();
         loop {
-            if queue.len() > 0 {
+            if !queue.is_empty() {
                 return;
             }
             queue = self.read_cond.wait(queue);
@@ -106,7 +105,7 @@ impl<T> Channel<T> {
     {
         let mut queue = self.queue.lock();
         loop {
-            if let Some(ret) = queue.get(0) {
+            if let Some(ret) = queue.front() {
                 return ret.clone();
             }
             queue = self.read_cond.wait(queue);
@@ -118,7 +117,7 @@ impl<T> Channel<T> {
     where
         T: Clone
     {
-        self.queue.lock().get(0).cloned()
+        self.queue.lock().front().cloned()
     }
 
     /// Returns an infinite iterator over elements received from the channel.
@@ -140,6 +139,12 @@ impl<T> Channel<T> {
             should_notify_read: false,
             should_notify_write: false
         }
+    }
+}
+
+impl<T> Default for Channel<T> {
+    fn default() -> Channel<T> {
+        Channel::new()
     }
 }
 
@@ -212,6 +217,11 @@ impl<T> LockedChannel<'_, T> {
     /// Returns the number of elements currently in the channel
     pub fn len(&self) -> usize {
         self.queue.len()
+    }
+
+    /// Returns `true` if the queue is empty
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Returns an iterator over the elements without consuming them
