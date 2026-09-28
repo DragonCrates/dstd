@@ -4,6 +4,7 @@ use core::sync::atomic::AtomicU32;
 use super::sys::*;
 use super::MutexGuard;
 
+#[derive(Default, Debug)]
 pub struct Condvar {
     word: FutexWord,
     waiters: AtomicU32,

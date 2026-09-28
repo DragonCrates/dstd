@@ -106,6 +106,12 @@ impl<T> DerefMut for MutexGuard<'_, T> {
     }
 }
 
+impl<T: Debug> fmt::Debug for MutexGuard<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
 impl<T> Drop for MutexGuard<'_, T> {
     fn drop(&mut self) {
         self.mutex.futex.unlock();

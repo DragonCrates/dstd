@@ -33,4 +33,7 @@ pub use alloc::sync::{Arc, Weak};
 mod condvar;
 pub use condvar::Condvar;
 
-// TODO mpsc, Barrier, Semaphore
+pub mod channel;
+pub use channel::Channel;
+
+// TODO Barrier, Semaphore
