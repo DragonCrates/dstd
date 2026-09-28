@@ -3,10 +3,19 @@ use core::ops::{Index, IndexMut};
 
 extern crate alloc;
 use alloc::collections::VecDeque;
-use alloc::collections::vec_deque::{Iter as DequeIter, Drain as DequeDrain};
+use alloc::collections::vec_deque::Iter as DequeIter;
 
 use super::{Mutex, MutexGuard, Condvar};
 
+/// A multiple-producer, multiple-consumer (MPMC) FIFO channel.
+///
+/// It is an unbounded queue guarded by a [`Mutex`], with two [`Condvar`]s for
+/// blocking `send`/`recv` operations. Elements are pushed to the back and
+/// received from the front, preserving insertion order.
+///
+/// The channel has no close/drop-termination: blocking operations (`recv`,
+/// `wait`, `peek`) wait forever until data arrives, and [`Channel::iter`] is
+/// infinite.
 #[derive(Default, Debug)]
 pub struct Channel<T> {
     queue: Mutex<VecDeque<T>>,
@@ -15,6 +24,7 @@ pub struct Channel<T> {
 }
 
 impl<T> Channel<T> {
+    /// Creates a new, empty channel.
     pub fn new() -> Channel<T> {
         Channel {
             queue: Mutex::new(VecDeque::new()),
@@ -23,6 +33,7 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Creates a new, empty channel with the capacity to hold at least `cap` elements without reallocating
     pub fn with_capacity(cap: usize) -> Channel<T> {
         Channel {
             queue: Mutex::new(VecDeque::with_capacity(cap)),
@@ -31,16 +42,22 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Appends `item` to the back of the channel
     pub fn push(&self, item: T) {
         self.queue.lock().push_back(item);
         // We need notify_all because it is possible to wait for an item without consuming it, via Channel::wait() or Channel::peek()
         self.read_cond.notify_all();
     }
 
+    /// Appends `item` to the back of the channel, blocking while the queue is
+    /// full (holds at least `bound` elements). After returning, the queue
+    /// holds at most `bound` elements.
+    ///
+    /// Example: `channel.push_bounded("item", 1)` ensures it holds at most 1 element, and `channel.push_bounded("item", 0)` simply blocks forever
     pub fn push_bounded(&self, item: T, bound: usize) {
         let mut queue = self.queue.lock();
         loop {
-            if queue.len() <= bound {
+            if queue.len() < bound {
                 queue.push_back(item);
                 self.read_cond.notify_all();
                 return;
@@ -49,6 +66,7 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Blocks until the channel is non-empty, then removes and returns the oldest element
     pub fn recv(&self) -> T {
         let mut queue = self.queue.lock();
         loop {
@@ -60,6 +78,7 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Removes and returns an item from the queue. Returns `None` immediately if the channel is empty
     pub fn try_recv(&self) -> Option<T> {
         if let Some(ret) = self.queue.lock().pop_front() {
             self.write_cond.notify_one();
@@ -69,6 +88,7 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Blocks until the channel holds at least one element. Does not consume anything
     pub fn wait(&self) {
         let mut queue = self.queue.lock();
         loop {
@@ -79,6 +99,7 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Blocks until the channel is non-empty, then returns a clone of the first element without consuming it
     pub fn peek(&self) -> T
     where
         T: Clone
@@ -92,6 +113,7 @@ impl<T> Channel<T> {
         }
     }
 
+    /// Returns a clone of the oldest element without consuming it, or `None` if the channel is empty
     pub fn try_peek(&self) -> Option<T>
     where
         T: Clone
@@ -99,12 +121,17 @@ impl<T> Channel<T> {
         self.queue.lock().get(0).cloned()
     }
 
+    /// Returns an infinite iterator over elements received from the channel.
+    ///
+    /// Each call to `next` blocks until an element is available; it never
+    /// returns `None`.
     pub fn iter(&self) -> Iter<'_, T> {
         Iter {
             channel: self
         }
     }
 
+    /// Locks the channel so multiple operations can be performed without releasing the mutex in between
     pub fn lock(&self) -> LockedChannel<'_, T> {
         LockedChannel {
             queue: self.queue.lock(),
@@ -116,6 +143,11 @@ impl<T> Channel<T> {
     }
 }
 
+/// An infinite iterator over the elements of a [`Channel`], received by
+/// [`Channel::iter`].
+///
+/// Each call to [`Iterator::next`] blocks until an element is available and
+/// never returns `None`.
 #[derive(Debug, Clone)]
 pub struct Iter<'a, T> {
     channel: &'a Channel<T>
@@ -131,6 +163,12 @@ impl<T> Iterator for Iter<'_, T> {
 // FusedIterator impl is OK because our Iter never returns None
 impl<T> FusedIterator for Iter<'_, T> {}
 
+/// A locked view of a [`Channel`], returned by [`Channel::lock`].
+///
+/// Provides the same operations as [`Channel`], but holds the internal mutex
+/// for the whole lifetime of the handle, allowing a batch of operations to be
+/// performed atomically. Blocked waiters are only notified when the handle is
+/// dropped, after operations that have modified the queue.
 #[derive(Debug)]
 pub struct LockedChannel<'a, T> {
     queue: MutexGuard<'a, VecDeque<T>>,
@@ -141,6 +179,7 @@ pub struct LockedChannel<'a, T> {
 }
 
 impl<T> LockedChannel<'_, T> {
+    /// Removes and returns the oldest element. Returns `None` if the channel is empty
     pub fn pop_front(&mut self) -> Option<T> {
         if let Some(ret) = self.queue.pop_front() {
             self.should_notify_write = true;
@@ -149,37 +188,43 @@ impl<T> LockedChannel<'_, T> {
         None
     }
 
+    /// Removes and returns the newest element. Returns `None` if the channel is empty
     pub fn pop_back(&mut self) -> Option<T> {
-        if let Some(ret) = self.queue.pop_front() {
+        if let Some(ret) = self.queue.pop_back() {
             self.should_notify_write = true;
             return Some(ret);
         }
         None
     }
 
+    /// Appends `item` to the front of the channel
     pub fn push_front(&mut self, item: T) {
         self.queue.push_front(item);
         self.should_notify_read = true;
     }
 
+    /// Appends `item` to the back of the channel
     pub fn push_back(&mut self, item: T) {
-        self.queue.push_front(item);
+        self.queue.push_back(item);
         self.should_notify_read = true;
     }
 
+    /// Returns the number of elements currently in the channel
     pub fn len(&self) -> usize {
         self.queue.len()
     }
 
+    /// Returns an iterator over the elements without consuming them
     pub fn peek_iter(&mut self) -> PeekIter<'_, T> {
         PeekIter {
             iter: self.queue.iter(),
         }
     }
 
+    /// Removes and returns elements currently in the channel, one by one
     pub fn iter(&mut self) -> LockedIter<'_, T> {
         LockedIter {
-            iter: self.queue.drain(..),
+            queue: &mut *self.queue,
             should_notify_write: &mut self.should_notify_write,
         }
     }
@@ -209,6 +254,8 @@ impl<T> Drop for LockedChannel<'_, T> {
     }
 }
 
+/// A non-consuming iterator over the elements of a [`LockedChannel`], created
+/// by [`LockedChannel::peek_iter`].
 #[derive(Debug, Clone)]
 pub struct PeekIter<'a, T> {
     iter: DequeIter<'a, T>,
@@ -241,40 +288,48 @@ impl<T> ExactSizeIterator for PeekIter<'_, T> {
 
 impl<T> FusedIterator for PeekIter<'_, T> {}
 
+/// A consuming iterator over the elements of a [`LockedChannel`], created by
+/// [`LockedChannel::iter`].
 #[derive(Debug)]
 pub struct LockedIter<'a, T> {
-    iter: DequeDrain<'a, T>,
+    queue: &'a mut VecDeque<T>,
     should_notify_write: &'a mut bool,
 }
 
 impl<T> Iterator for LockedIter<'_, T> {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        let ret = self.iter.next();
+        let ret = self.queue.pop_front();
         if ret.is_some() { *self.should_notify_write = true; }
         ret
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        (self.queue.len(), Some(self.queue.len()))
     }
 
     fn count(self) -> usize {
-        let ret = self.iter.count();
-        if ret > 0 { *self.should_notify_write = true; }
+        let ret = self.queue.len();
+        if ret > 0 {
+            *self.should_notify_write = true;
+            self.queue.clear();
+        }
         ret
     }
 
     fn last(self) -> Option<T> {
-        let ret = self.iter.last();
-        if ret.is_some() { *self.should_notify_write = true; }
+        let ret = self.queue.pop_back();
+        if ret.is_some() {
+            *self.should_notify_write = true;
+            self.queue.clear();
+        }
         ret
     }
 }
 
 impl<T> ExactSizeIterator for LockedIter<'_, T> {
     fn len(&self) -> usize {
-        self.iter.len()
+        self.queue.len()
     }
 }
 
