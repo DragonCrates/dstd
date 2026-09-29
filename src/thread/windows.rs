@@ -74,7 +74,6 @@ impl Drop for JoinHandle {
     }
 }
 
-// TODO: verify struct size
 #[repr(C)]
 struct SYSTEM_INFO {
     wProcessorArchitecture: WORD,

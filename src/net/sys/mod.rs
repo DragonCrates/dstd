@@ -1,60 +1,24 @@
-#![allow(non_camel_case_types, clippy::upper_case_acronyms)]
+#![allow(non_camel_case_types)]
 
-use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr};
 use core::ffi::{c_int, c_ushort};
-#[cfg(windows)]
-use core::ffi::c_char;
+use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr};
 
 #[cfg(windows)]
-use crate::sys::windows::types::*;
+crate::block! {
+    mod windows;
+    pub use windows::*;
+}
+
 #[cfg(unix)]
-use crate::sys::libc::{c_ssize_t, c_size_t};
-
-// TODO: windows.rs, unix.rs
-
-crate::cfg_if! {
-    if #[cfg(windows)] {
-        pub type Socket = SOCKET;
-        pub const INVALID_SOCKET: Socket = usize::MAX;
-    } else if #[cfg(unix)] {
-        pub type Socket = c_int;
-        pub const INVALID_SOCKET: Socket = -1;
-    }
-}
-
-// socklen_t is tricky
-crate::cfg_if! {
-    if #[cfg(target_os = "linux")] {
-        pub type socklen_t = u32;
-    } else if #[cfg(target_os = "windows")] {
-        pub type socklen_t = i32;
-    } else if #[cfg(target_os = "android")] {
-        #[cfg(target_pointer_width = "32")]
-        pub type socklen_t = i32;
-        #[cfg(target_pointer_width = "64")]
-        pub type socklen_t = u32;
-    }
-}
-
-pub const SOMAXCONN: c_int = 128;
-
-crate::cfg_if! {
-    if #[cfg(any(target_os = "linux", target_os = "android"))] {
-        pub const AF_INET: c_ushort = 2;
-        pub const AF_INET6: c_ushort = 10;
-        pub const SOCK_STREAM: c_int = 1;
-        //pub const SOCK_DGRAM: c_int = 2;
-    } else if #[cfg(target_os = "windows")] {
-        pub const AF_INET: c_ushort = 2;
-        pub const AF_INET6: c_ushort = 23;
-        pub const SOCK_STREAM: c_int = 1;
-        //pub const SOCK_DGRAM: c_int = 2;
-    }
+crate::block! {
+    mod unix;
+    pub use unix::*;
 }
 
 pub type sa_family_t = c_ushort;
 pub type in_addr_t = u32;
 pub type in_port_t = u16;
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union sockaddr {
@@ -62,11 +26,13 @@ pub union sockaddr {
     pub _in: sockaddr_in,
     pub _in6: sockaddr_in6,
 }
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct sockaddr_storage {
     pub ss_family: sa_family_t,
 }
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct sockaddr_in {
@@ -74,8 +40,9 @@ pub struct sockaddr_in {
     pub sin_port: in_port_t,
     pub sin_addr: in_addr,
 }
+
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct sockaddr_in6 {
     pub sin6_family: sa_family_t, // AF_INET6
     pub sin6_port: in_port_t,
@@ -83,38 +50,25 @@ pub struct sockaddr_in6 {
     pub sin6_addr: in6_addr,
     pub sin6_scope_id: u32,
 }
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct in_addr {
     pub s_addr: in_addr_t,
 }
+
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct in6_addr {
     pub s6_addr: [u8; 16],
 }
+
 impl Default for sockaddr {
     fn default() -> sockaddr {
         sockaddr {
-            // fill the longest field with zeroes
-            _in6: sockaddr_in6 {
-                sin6_family: 0,
-                sin6_port: 0,
-                sin6_flowinfo: 0,
-                sin6_addr: in6_addr { s6_addr: [0; 16] },
-                sin6_scope_id: 0,
-            }
+            // Initialize last field
+            _in6: sockaddr_in6::default()
         }
-    }
-}
-
-crate::cfg_if! {
-    if #[cfg(unix)] {
-        pub type SendLen = c_size_t;
-        pub type SendRet = c_ssize_t;
-    } else if #[cfg(windows)] {
-        pub type SendLen = c_int;
-        pub type SendRet = c_int;
     }
 }
 
@@ -123,57 +77,8 @@ unsafe extern "C" {
     pub fn bind(socket: Socket, sockaddr: *const sockaddr, addrlen: socklen_t) -> c_int;
     pub fn listen(socket: Socket, backlog: c_int) -> c_int;
     pub fn accept(socket: Socket, addr: *mut sockaddr, addrlen: *mut socklen_t) -> Socket;
-    // These have different definition on windows
     pub fn send(socket: Socket, buf: *const u8, size: SendLen, flags: c_int) -> SendRet;
     pub fn recv(socket: Socket, buf: *mut u8, size: SendLen, flags: c_int) -> SendRet;
-}
-
-#[cfg(windows)]
-unsafe extern "C" {
-    pub fn WSAStartup(
-        /* [in] */ wVersionRequired: WORD,
-        /* [out] */ lpWSAData: LPWSADATA,
-    ) -> c_int;
-    pub fn closesocket(socket: Socket) -> c_int;
-    pub fn WSAGetLastError() -> c_int;
-}
-
-#[cfg(windows)]
-crate::block! {
-    const WSADESCRIPTION_LEN: usize = 256;
-    const WSASYS_STATUS_LEN: usize = 128;
-
-    // TODO: ideally, length of these structs should be verified aganist C code
-    #[repr(C)]
-    #[cfg(target_pointer_width = "64")]
-    #[allow(non_snake_case)]
-    pub struct WSAData {
-        wVersion: WORD,
-        wHighVersion: WORD,
-        // #ifdef _WIN64
-        iMaxSockets: c_ushort,
-        iMaxUdpDg: c_ushort,
-        lpVendorInfo: *mut c_char,
-        szDescription: [c_char; WSADESCRIPTION_LEN+1],
-        szSystemStatus: [c_char; WSASYS_STATUS_LEN+1],
-    }
-
-    #[cfg(target_pointer_width = "32")]
-    #[repr(C)]
-    #[allow(non_snake_case)]
-    pub struct WSAData {
-        wVersion: WORD,
-        wHighVersion: WORD,
-        // #else
-        szDescription: [c_char; WSADESCRIPTION_LEN+1],
-        szSystemStatus: [c_char; WSASYS_STATUS_LEN+1],
-        iMaxSockets: c_ushort,
-        iMaxUdpDg: c_ushort,
-        lpVendorInfo: *mut c_char,
-    }
-
-    pub type WSADATA = WSAData;
-    pub type LPWSADATA = *mut WSADATA;
 }
 
 pub trait SocketAddrExt {
