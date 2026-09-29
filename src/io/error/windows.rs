@@ -6,6 +6,8 @@ use alloc::string::String;
 
 use crate::sys::windows::types::*;
 
+use super::ErrorKind;
+
 unsafe extern "C" {
     /// Retrieves the calling thread's last-error code value.
     fn GetLastError() -> DWORD;
@@ -55,4 +57,8 @@ pub fn strerror(error: RawError) -> String {
     }
 
     String::from_utf16_lossy(&buf[..end])
+}
+
+pub fn os_to_errorkind(_os: RawError) -> ErrorKind {
+    ErrorKind::Other
 }

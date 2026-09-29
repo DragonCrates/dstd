@@ -5,6 +5,8 @@ use alloc::string::String;
 
 use crate::sys::libc::{c_size_t, errno};
 
+use super::ErrorKind;
+
 pub type RawError = c_int;
 
 pub fn last_os_error() -> RawError {
@@ -27,4 +29,11 @@ pub fn strerror(errno: RawError) -> String {
     unsafe { strerror_r(errno, buf.as_mut_ptr(), buf.len()); }
     let zero = buf.iter().position(|&i| i == 0).expect("unterminated C string");
     String::from_utf8_lossy(&buf[..zero]).into()
+}
+
+pub fn os_to_errorkind(os: RawError) -> ErrorKind {
+    match os {
+        errno::EINTR => ErrorKind::Interrupted,
+        _ => ErrorKind::Other,
+    }
 }

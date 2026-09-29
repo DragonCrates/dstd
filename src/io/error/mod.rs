@@ -15,14 +15,13 @@ crate::block! {
     use unix as sys;
 }
 
-// An ErrorKind type will be added in future, to match on returned OS error
-
 /// Raw OS error type. `c_int` on Linux and `DWORD` on Windows
 pub type RawError = sys::RawError;
 
 /// The error of any I/O operations
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Error {
+    // will need repr_bitpacked if we add a custom error type
     pub(crate) repr: Repr,
 }
 
@@ -45,6 +44,16 @@ impl Error {
     /// Constructs a new error from a raw OS error
     pub fn from_raw_os_error(code: RawError) -> Error {
         Error { repr: Repr::Os(code) }
+    }
+
+    /// Returns the corresponding [`ErrorKind`] for this error
+    pub fn kind(&self) -> ErrorKind {
+        match self.repr {
+            Repr::UnexpectedEof => ErrorKind::UnexpectedEof,
+            Repr::WriteZero => ErrorKind::WriteZero,
+            Repr::Utf8 | Repr::OsStr(_) => ErrorKind::InvalidData,
+            Repr::Os(os) => sys::os_to_errorkind(os),
+        }
     }
 
     /// Returns the container raw OS error if it was one
@@ -112,3 +121,30 @@ impl From<OsStrError> for Error {
 
 /// Result type alias for I/O operations
 pub type Result<T> = core::result::Result<T, Error>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErrorKind {
+    // dstd errors
+    UnexpectedEof,
+    WriteZero,
+    InvalidData,
+
+    // os errors
+    Interrupted,
+
+    Other,
+}
+
+impl fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ErrorKind::UnexpectedEof => f.write_str("unexpected eof"),
+            ErrorKind::WriteZero => f.write_str("write zero"),
+            ErrorKind::InvalidData => f.write_str("invalid data"),
+            ErrorKind::Interrupted => f.write_str("interrupted"),
+            ErrorKind::Other => f.write_str("other"),
+        }
+    }
+}
+
+impl core::error::Error for ErrorKind {}

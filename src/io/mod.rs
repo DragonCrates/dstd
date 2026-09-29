@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 pub(crate) mod stdio;
 pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
 mod error;
-pub use error::{Result, Error, RawError};
+pub use error::{Result, Error, ErrorKind, RawError};
 
 use error::Repr;
 
