@@ -33,20 +33,24 @@ pub mod sync;
 pub mod thread;
 pub mod time;
 
-// Link to libc on Linux
-#[cfg(any(target_os = "linux", target_os = "android"))]
-#[link(name = "c")]
-unsafe extern "C" {}
+mod linkage {
+    #[cfg(windows)]
+    crate::block! {
+        // winsock
+        #[link(name = "ws2_32")]
+        unsafe extern "C" {}
+        // synchapi
+        #[link(name = "synchronization")]
+        unsafe extern "C" {}
+    }
 
-// Link to winsock on Windows
-#[cfg(windows)]
-#[link(name = "ws2_32")]
-unsafe extern "C" {}
-
-// Needed by dstd::sync
-#[cfg(windows)]
-#[link(name = "synchronization")]
-unsafe extern "C" {}
+    #[cfg(unix)]
+    crate::block! {
+        // libc
+        #[link(name = "c")]
+        unsafe extern "C" {}
+    }
+}
 
 /// Defines a block that can be configured-out entirely
 macro_rules! block {
