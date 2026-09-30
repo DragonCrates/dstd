@@ -15,6 +15,8 @@ crate::block! {
     pub use unix::*;
 }
 
+pub const SOMAXCONN: c_int = 128;
+
 pub type sa_family_t = c_ushort;
 pub type in_addr_t = u32;
 pub type in_port_t = u16;

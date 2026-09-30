@@ -19,8 +19,6 @@ crate::cfg_if! {
     }
 }
 
-pub const SOMAXCONN: c_int = 128;
-
 #[cfg(any(target_os = "linux", target_os = "android"))]
 crate::block! {
     pub const AF_INET: c_ushort = 2;

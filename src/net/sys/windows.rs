@@ -11,8 +11,6 @@ const SOCKET_ERROR: c_int = -1;
 
 pub type socklen_t = i32;
 
-pub const SOMAXCONN: c_int = 128;
-
 pub const AF_INET: c_ushort = 2;
 pub const AF_INET6: c_ushort = 23;
 pub const SOCK_STREAM: c_int = 1;
