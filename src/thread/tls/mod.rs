@@ -193,6 +193,14 @@ impl<T> LocalKey<RefCell<T>> {
 // TODO:
 // We can multiplex keys into a Vec
 
+/// Defines a thread-local variable. Check [`LocalKey`] for more info
+/// # Example
+/// ```
+/// # use dstd::thread_local;
+/// thread_local! {
+///     static MY_THREAD_LOCAL: Cell<i32> = Cell::new(0);
+/// }
+/// ```
 #[macro_export]
 macro_rules! thread_local {
     ($($(#[$m:meta])* $v:vis static $n:ident: $t:ty = $i:expr);* $(;)?) => {
