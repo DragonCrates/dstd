@@ -1,0 +1,18 @@
+[package]
+name = "custom-randomstate"
+version = "0.1.0"
+edition = "2024"
+
+description = "Example of using hashbrown with the siphasher crate"
+publish = false
+
+[dependencies]
+dstd = { version = "0.1.0", path = "../.." }
+hashbrown = { version = "0.17", default-features = false }
+siphasher = { version = "1.0", default-features = false }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
