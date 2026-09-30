@@ -73,7 +73,6 @@ impl Default for sockaddr {
 }
 
 unsafe extern "C" {
-    pub fn socket(domain: c_int, _type: c_int, protocol: c_int) -> Socket;
     pub fn bind(socket: Socket, sockaddr: *const sockaddr, addrlen: socklen_t) -> c_int;
     pub fn listen(socket: Socket, backlog: c_int) -> c_int;
     pub fn accept(socket: Socket, addr: *mut sockaddr, addrlen: *mut socklen_t) -> Socket;

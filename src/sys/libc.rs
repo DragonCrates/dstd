@@ -36,6 +36,8 @@ pub mod fcntl {
     pub const O_EXCL: c_int = 0o200;
     pub const O_TRUNC: c_int = 0o1000;
     pub const O_APPEND: c_int = 0o2000;
+    pub const O_NONBLOCK: c_int = 0o4000;
+    pub const O_CLOEXEC: c_int = 0o2000000;
 }
 
 // TODO: migrate other functions here

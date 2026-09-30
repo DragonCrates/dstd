@@ -1,6 +1,7 @@
 use core::ffi::{c_int, c_ushort};
 
 use crate::sys::libc::{c_ssize_t, c_size_t};
+use crate::sys::libc::fcntl;
 use crate::io::Error;
 
 pub type Socket = c_int;
@@ -32,6 +33,24 @@ pub type SendLen = c_size_t;
 pub type SendRet = c_ssize_t;
 
 pub fn init() {}
+
+#[cfg(any(target_os = "linux", target_os = "android"))]
+crate::block! {
+    const SOCK_CLOEXEC: c_int = fcntl::O_CLOEXEC;
+    const SOCK_NONBLOCK: c_int = fcntl::O_NONBLOCK;
+}
+
+unsafe extern "C" {
+    pub fn socket(domain: c_int, _type: c_int, protocol: c_int) -> Socket;
+}
+
+pub fn new_cloexec(domain: c_int, socket_type: c_int) -> Socket {
+    unsafe { socket(domain, socket_type | SOCK_CLOEXEC, 0) }
+}
+
+pub fn new_nonblock(domain: c_int, socket_type: c_int) -> Socket {
+    unsafe { socket(domain, socket_type | SOCK_NONBLOCK | SOCK_CLOEXEC, 0) }
+}
 
 pub fn socketerror() -> Error {
     Error::last_os_error()

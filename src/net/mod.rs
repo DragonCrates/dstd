@@ -9,6 +9,12 @@ pub use sys::Socket;
 pub use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, IpAddr, Ipv4Addr, Ipv6Addr, AddrParseError};
 
 mod tcp;
-pub use tcp::{TcpListener, TcpStream};
+pub use tcp::{TcpSocket, TcpListener, TcpStream};
 
 // TODO: gethostname
+
+pub trait AsSocket {
+    fn as_socket(&self) -> Socket;
+    fn into_socket(self) -> Socket;
+    fn from_socket(socket: Socket) -> Self;
+}
