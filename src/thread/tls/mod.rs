@@ -196,6 +196,7 @@ impl<T> LocalKey<RefCell<T>> {
 /// Defines a thread-local variable. Check [`LocalKey`] for more info
 /// # Example
 /// ```
+/// # use core::cell::Cell;
 /// # use dstd::thread_local;
 /// thread_local! {
 ///     static MY_THREAD_LOCAL: Cell<i32> = Cell::new(0);
