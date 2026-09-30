@@ -27,7 +27,7 @@ fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> !
 
 // TODO: windows.rs
 #[cfg(windows)]
-#[allow(nonstandard_style)]
+#[allow(nonstandard_style, clippy::upper_case_acronyms)]
 fn panic_msg(file: &str, line: u32, column: u32, message: PanicMessage<'_>) -> ! {
     use core::ptr;
     use core::ffi::c_int;

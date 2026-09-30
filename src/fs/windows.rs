@@ -102,7 +102,7 @@ pub fn seek(handle: HANDLE, pos: SeekFrom) -> Result<u64> {
     let mut new_file_pointer: i64 = 0;
     let ret = unsafe { SetFilePointerEx(
         handle, // hFile
-        dist as i64, // liDistanceToMove
+        dist, // liDistanceToMove
         &mut new_file_pointer, // lpNewFilePointer
         method as DWORD, // dwMoveMethod
     ) };

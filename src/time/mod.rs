@@ -123,6 +123,7 @@ impl FormatTime {
         SystemTime { time }
     }
 
+    #[allow(clippy::unnecessary_cast)]
     pub(crate) fn from_tm(tm: Tm) -> FormatTime {
         FormatTime {
             year: tm.tm_year + 1900,
