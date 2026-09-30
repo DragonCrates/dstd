@@ -140,3 +140,10 @@ impl<T, E: Error> Termination for Result<T, E> {
         }
     }
 }
+
+impl Sealed for i32 {}
+impl Termination for i32 {
+    fn report(&self) -> i32 {
+        *self
+    }
+}
