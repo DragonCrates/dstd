@@ -39,7 +39,7 @@ crate::block! {
 }
 
 unsafe extern "C" {
-    pub fn socket(domain: c_int, _type: c_int, protocol: c_int) -> Socket;
+    fn socket(domain: c_int, _type: c_int, protocol: c_int) -> Socket;
 }
 
 pub fn new_cloexec(domain: c_int, socket_type: c_int) -> Socket {
