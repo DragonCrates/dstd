@@ -3,6 +3,9 @@ name = "test-example"
 version = "0.1.0"
 edition = "2024"
 
+description = "Example that showcases the use of `cargo test` with dstd bin"
+publish = false
+
 [dependencies]
 dstd = { version = "0.1.0", path = "../.." }
 

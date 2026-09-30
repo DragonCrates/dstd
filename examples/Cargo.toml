@@ -3,6 +3,9 @@ name = "dstd-examples"
 version = "0.1.0"
 edition = "2024"
 
+description = "dstd examples"
+publish = false
+
 [dependencies]
 dstd = { version = "0.1.0", path = ".." }
 
