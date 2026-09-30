@@ -7,11 +7,7 @@
 
 #![no_std]
 
-mod cfg_if;
-pub(crate) use cfg_if::cfg_if;
-
-pub(crate) mod panic;
-pub(crate) mod sys;
+mod sys;
 
 // TODO:
 // udp, unix sockets, tcp connect
@@ -25,6 +21,7 @@ pub mod init;
 pub mod io;
 pub mod net;
 pub mod os_str;
+pub mod panic;
 pub mod path;
 pub mod prelude;
 pub mod process;
@@ -56,4 +53,4 @@ mod linkage {
 macro_rules! block {
     ($($args:tt)*) => { $($args)* };
 }
-pub(crate) use block;
+use block;

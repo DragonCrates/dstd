@@ -6,19 +6,16 @@ use core::sync::atomic::AtomicU32;
 use crate::io::Error;
 use crate::sys::libc::errno;
 
-crate::cfg_if! {
-    if #[cfg(target_arch = "x86")] {
-        const SYS_futex: c_long = 240;
-    } else if #[cfg(target_arch = "x86_64")] {
-        const SYS_futex: c_long = 202;
-    } else if #[cfg(target_arch = "arm")] {
-        const SYS_futex: c_long = 240;
-    } else if #[cfg(target_arch = "aarch64")] {
-        const SYS_futex: c_long = 98;
-    } else if #[cfg(target_arch = "riscv64")] {
-        const SYS_futex: c_long = 98;
-    }
-}
+#[cfg(target_arch = "x86")]
+const SYS_futex: c_long = 240;
+#[cfg(target_arch = "x86_64")]
+const SYS_futex: c_long = 202;
+#[cfg(target_arch = "arm")]
+const SYS_futex: c_long = 240;
+#[cfg(target_arch = "aarch64")]
+const SYS_futex: c_long = 98;
+#[cfg(target_arch = "riscv64")]
+const SYS_futex: c_long = 98;
 
 unsafe extern "C" {
     fn syscall(__number: c_long, ...) -> c_long;

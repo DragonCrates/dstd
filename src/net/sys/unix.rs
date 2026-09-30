@@ -7,16 +7,15 @@ use crate::io::Error;
 pub type Socket = c_int;
 pub const INVALID_SOCKET: Socket = -1;
 
-// socklen_t is tricky
-crate::cfg_if! {
-    if #[cfg(target_os = "linux")] {
-        pub type socklen_t = u32;
-    } else if #[cfg(target_os = "android")] {
-        #[cfg(target_pointer_width = "32")]
-        pub type socklen_t = i32;
-        #[cfg(target_pointer_width = "64")]
-        pub type socklen_t = u32;
-    }
+#[cfg(target_os = "linux")]
+pub type socklen_t = u32;
+
+#[cfg(target_os = "android")]
+crate::block! {
+    #[cfg(target_pointer_width = "32")]
+    pub type socklen_t = i32;
+    #[cfg(target_pointer_width = "64")]
+    pub type socklen_t = u32;
 }
 
 #[cfg(any(target_os = "linux", target_os = "android"))]

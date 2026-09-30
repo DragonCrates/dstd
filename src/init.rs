@@ -51,13 +51,6 @@ crate::block! {
     }
 }
 
-/// Not a public api! Exposed only for the `main!` macro
-#[doc(hidden)]
-pub use crate::alloc::System as __System;
-/// Not a public api! Exposed only for the `main!` macro
-#[doc(hidden)]
-pub use crate::panic::panic as __panic;
-
 /// Defines a main function for your crate
 /// # Usage
 /// First, set up your Cargo.toml:
@@ -83,14 +76,14 @@ macro_rules! main {
         mod __dstd_main {
             use core::panic::PanicInfo;
             use $crate::alloc::System;
-            use $crate::init::{Termination, __panic};
+            use $crate::init::Termination;
 
             #[global_allocator]
             static GLOBAL_ALLOC: System = System;
 
             #[panic_handler]
             fn panic_handler(info: &PanicInfo) -> ! {
-                __panic(info)
+                $crate::panic::handle_panic(info)
             }
 
             #[unsafe(no_mangle)]

@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
-pub(crate) mod stdio;
+mod stdio;
 pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
 mod error;
 pub use error::{Result, Error, ErrorKind, RawError};

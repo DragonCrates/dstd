@@ -10,11 +10,10 @@ use crate::io::Error;
 
 use super::ThreadInit;
 
-crate::cfg_if! {
-    if #[cfg(any(target_os = "linux", target_os = "android"))] {
-        pub type pthread_t = c_ulong;
-        pub type pthread_attr_t = c_void;
-    }
+#[cfg(any(target_os = "linux", target_os = "android"))]
+crate::block! {
+    type pthread_t = c_ulong;
+    type pthread_attr_t = c_void;
 }
 
 unsafe extern "C" {

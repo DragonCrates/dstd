@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types, clippy::upper_case_acronyms)]
+#![allow(nonstandard_style, clippy::upper_case_acronyms)]
 
 pub mod types {
     use core::ffi::*;
@@ -36,8 +36,6 @@ pub mod types {
     // not used
     pub type LPOVERLAPPED = *mut c_void;
     pub type LPSECURITY_ATTRIBUTES = *mut c_void;
-
-    // TODO: move console structures here
 }
 
 use types::*;
@@ -151,4 +149,120 @@ pub mod winsock2 {
 
     pub const WSA_FLAG_NO_HANDLE_INHERIT: DWORD = 0x80;
     pub const FIONBIO: c_ulong = 0x8004667e;
+}
+
+pub mod wincontypes {
+    use super::types::*;
+
+    #[repr(C)]
+    #[derive(Default)]
+    pub struct COORD {
+        X: SHORT,
+        Y: SHORT,
+    }
+
+    #[repr(C)]
+    #[derive(Default)]
+    pub struct SMALL_RECT {
+        Left: SHORT,
+        Top: SHORT,
+        Right: SHORT,
+        Bottom: SHORT,
+    }
+}
+
+pub mod consoleapi {
+    use super::types::*;
+
+    unsafe extern "C" {
+        /// Retrieves the current input mode of a console's input buffer or the current output mode of a console screen buffer.
+        pub fn GetConsoleMode(hConsoleHandle: HANDLE, lpMode: LPDWORD) -> BOOL;
+        /// Writes a character string to a console screen buffer beginning at the current cursor location.
+        pub fn WriteConsoleW(
+            /* _In_ */ hConsoleOutput: HANDLE,
+            /* _In_ */ lpBuffer: LPCVOID,
+            /* _In_ */ nNumberOfCharsToWrite: DWORD,
+            /* _Out_opt_ */ lpNumberOfCharsWritten: LPDWORD,
+            /* _Reserved_ */ lpReserved: LPVOID,
+        ) -> BOOL;
+    }
+}
+
+pub mod consoleapi2 {
+    use super::types::*;
+    use super::wincontypes::*;
+
+    #[repr(C)]
+    #[derive(Default)]
+    pub struct CONSOLE_SCREEN_BUFFER_INFO {
+        pub dwSize: COORD,
+        pub dwCursorPosition: COORD,
+        pub wAttributes: WORD,
+        pub srWindow: SMALL_RECT,
+        pub dwMaximumWindowSize: COORD,
+    }
+    pub type PCONSOLE_SCREEN_BUFFER_INFO = *mut CONSOLE_SCREEN_BUFFER_INFO;
+
+    unsafe extern "C" {
+        /// Sets the attributes of characters written to the console screen buffer by the WriteFile or WriteConsole function, or echoed by the ReadFile or ReadConsole function. This function affects text written after the function call.
+        pub fn SetConsoleTextAttribute(
+            /* _In_ */ hConsoleOutput: HANDLE,
+            /* _In_ */ wAttributes: WORD,
+        ) -> BOOL;
+        /// Retrieves information about the specified console screen buffer.
+        pub fn GetConsoleScreenBufferInfo(
+            /* _In_ */ hConsoleOutput: HANDLE,
+            /* _Out_ */ lpConsoleScreenBufferInfo: PCONSOLE_SCREEN_BUFFER_INFO,
+        ) -> BOOL;
+    }
+}
+
+pub mod winuser {
+    use core::ffi::c_int;
+    use super::types::*;
+
+    unsafe extern "C" {
+        /// Displays a modal dialog box that contains a system icon, a set of buttons, and a brief application-specific message, such as status or error information.
+        pub fn MessageBoxW(
+            /* [in, optional] */ hWnd: HWND,
+            /* [in, optional] */ lpText: LPCWSTR,
+            /* [in, optional] */ lpCaption: LPCWSTR,
+            /* [in] */ uType: UINT,
+        ) -> c_int;
+    }
+    pub const MB_ICONERROR: UINT = 0x00000010;
+}
+
+pub mod processenv {
+    use super::types::*;
+
+    unsafe extern "C" {
+        /// Retrieves a handle to the specified standard device (standard input, standard output, or standard error).
+        pub fn GetStdHandle(nStdHandle: DWORD) -> HANDLE;
+    }
+}
+
+pub mod winbase {
+    use super::types::DWORD;
+
+    pub const STD_INPUT_HANDLE: DWORD = -10_i32 as DWORD;
+    pub const STD_OUTPUT_HANDLE: DWORD = -11_i32 as DWORD;
+    pub const STD_ERROR_HANDLE: DWORD = -12_i32 as DWORD;
+}
+
+pub mod stringapiset {
+    use core::ffi::c_int;
+    use super::types::*;
+
+    unsafe extern "C" {
+        /// Maps a character string to a UTF-16 (wide character) string.
+        pub fn MultiByteToWideChar(
+            /* [in] */ CodePage: UINT,
+            /* [in] */ dwFlags: DWORD,
+            /* [in] */ lpMultiByteStr: LPCCH,
+            /* [in] */ cbMultiByte: c_int,
+            /* [out, optional */ lpWideCharStr: LPWSTR,
+            /* [in] */ cchWideChar: c_int
+        ) -> c_int;
+    }
 }
