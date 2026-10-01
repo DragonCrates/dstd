@@ -5,12 +5,13 @@ extern crate alloc;
 use alloc::vec;
 
 use crate::io::{Result, Error, Read, Write};
-use crate::sys::windows::types::*;
+use crate::sys::windows::minwindef::*;
 use crate::sys::windows::winbase::*;
-use crate::sys::windows::WriteFile;
+use crate::sys::windows::fileapi::WriteFile;
 use crate::sys::windows::consoleapi::{GetConsoleMode, WriteConsoleW};
 use crate::sys::windows::stringapiset::MultiByteToWideChar;
 use crate::sys::windows::processenv::GetStdHandle;
+use crate::sys::windows::handleapi::INVALID_HANDLE_VALUE;
 
 pub struct RawStdio(DWORD);
 

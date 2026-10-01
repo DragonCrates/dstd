@@ -1,6 +1,6 @@
 use core::sync::atomic::{AtomicU8, AtomicU32};
 
-use crate::sys::windows::types::*;
+use crate::sys::windows::minwindef::*;
 use crate::io::Error;
 
 pub trait Waitable {

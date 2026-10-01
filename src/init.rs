@@ -8,7 +8,7 @@ use crate::env::ARGS;
 #[cfg(windows)]
 crate::block! {
     use core::ffi::c_int;
-    use crate::sys::windows::types::{LPCWSTR, LPWSTR};
+    use crate::sys::windows::minwindef::*;
 
     unsafe extern "C" {
         fn GetCommandLineW() -> LPWSTR;

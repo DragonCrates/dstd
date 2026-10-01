@@ -1,11 +1,13 @@
 use core::ffi::c_int;
 
 use super::OpenOptions;
-use crate::io::{Result, Error, SeekFrom};
+use crate::io::{self, Error, Read, Write, Seek, SeekFrom};
 use crate::os_str::OsStr;
-use crate::sys::libc::{self, fcntl};
+use crate::sys::libc::Fd;
+use crate::sys::libc::fcntl::{self, open};
+use crate::sys::libc::unistd::{read, write, lseek, close};
 
-pub type Handle = c_int;
+pub type RawHandle = Fd;
 
 fn opts_to_flags(opts: &OpenOptions) -> c_int {
     let mut flags = 0;
@@ -22,32 +24,46 @@ fn opts_to_flags(opts: &OpenOptions) -> c_int {
     flags
 }
 
-pub fn open(name: &OsStr, opts: &OpenOptions) -> Result<c_int> {
-    let flags = opts_to_flags(opts);
-    let ret = unsafe { libc::open(name.as_ptr(), flags, 0o666) };
-    if ret == -1 { return Err(Error::last_os_error()); }
-    Ok(ret)
+pub struct File {
+    fd: Fd,
 }
 
-pub fn read(fd: c_int, buf: &mut [u8]) -> Result<usize> {
-    let ret = unsafe { libc::read(fd, buf.as_mut_ptr(), buf.len()) };
-    if ret == -1 { return Err(Error::last_os_error()); }
-    Ok(ret as usize)
+impl File {
+    pub fn open(name: &OsStr, opts: &OpenOptions) -> io::Result<File> {
+        let flags = opts_to_flags(opts);
+        let fd = unsafe { open(name.as_ptr(), flags, 0o666) };
+        if fd == -1 { return Err(Error::last_os_error()); }
+        Ok(File { fd })
+    }
 }
 
-pub fn write(fd: c_int, buf: &[u8]) -> Result<usize> {
-    let ret = unsafe { libc::write(fd, buf.as_ptr(), buf.len()) };
-    if ret == -1 { return Err(Error::last_os_error()); }
-    Ok(ret as usize)
+impl Read for File {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let ret = unsafe { read(self.fd, buf.as_mut_ptr(), buf.len()) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(ret as usize)
+    }
 }
 
-pub fn seek(fd: c_int, pos: SeekFrom) -> Result<u64> {
-    let (offset, whence) = pos.to_flags();
-    let ret = unsafe { libc::lseek(fd, offset, whence) };
-    if ret == -1 { return Err(Error::last_os_error()); }
-    Ok(ret as u64)
+impl Write for File {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let ret = unsafe { write(self.fd, buf.as_ptr(), buf.len()) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(ret as usize)
+    }
 }
 
-pub fn close(fd: c_int) {
-    unsafe { libc::close(fd); }
+impl Seek for File {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        let (offset, whence) = pos.to_flags();
+        let ret = unsafe { lseek(self.fd, offset, whence) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(ret as u64)
+    }
+}
+
+impl Drop for File {
+    fn drop(&mut self) {
+        unsafe { close(self.fd); }
+    }
 }

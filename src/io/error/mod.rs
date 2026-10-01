@@ -1,5 +1,6 @@
 use core::fmt;
 use core::str::Utf8Error;
+use core::ffi::c_int;
 
 use crate::os_str::OsStrError;
 
@@ -32,7 +33,8 @@ pub enum Repr {
     Utf8,
     OsStr(OsStrError),
     Os(RawError),
-    //AddrInfo(AddrInfoError)
+    AddrInfo(c_int),
+    NoAddresses,
 }
 
 impl Error {
@@ -53,6 +55,8 @@ impl Error {
             Repr::WriteZero => ErrorKind::WriteZero,
             Repr::Utf8 | Repr::OsStr(_) => ErrorKind::InvalidData,
             Repr::Os(os) => sys::os_to_errorkind(os),
+            Repr::AddrInfo(_) => ErrorKind::Other,
+            Repr::NoAddresses => ErrorKind::InvalidInput,
         }
     }
 
@@ -69,6 +73,14 @@ impl Error {
             _ => None,
         }
     }
+
+    pub(crate) fn new_gai(code: c_int) -> Error {
+        Error { repr: Repr::AddrInfo(code) }
+    }
+
+    pub(crate) fn new_no_addresses() -> Error {
+        Error { repr: Repr::NoAddresses }
+    }
 }
 
 impl fmt::Debug for Error {
@@ -82,7 +94,11 @@ impl fmt::Debug for Error {
                 .field("code", &errno)
                 .field("msg", &sys::strerror(errno))
                 .finish(),
-            //Repr::AddrInfo(err) => err.fmt(f),
+            Repr::AddrInfo(code) => f.debug_struct("AddrInfo")
+                .field("code", &code)
+                .field("msg", &sys::gai_strerror(code))
+                .finish(),
+            Repr::NoAddresses => f.debug_struct("NoAddresses").finish(),
         }
     }
 }
@@ -95,7 +111,8 @@ impl fmt::Display for Error {
             Repr::Utf8 => f.write_str("stream did not contain valid UTF-8"),
             Repr::OsStr(err) => err.fmt(f),
             Repr::Os(errno) => f.write_str(&sys::strerror(errno)),
-            //Repr::AddrInfo(err) => err.fmt(f),
+            Repr::AddrInfo(code) => f.write_str(&sys::gai_strerror(code)),
+            Repr::NoAddresses => f.write_str("could not resolve to any addresses"),
         }
     }
 }
@@ -127,6 +144,7 @@ pub enum ErrorKind {
     // dstd errors
     UnexpectedEof,
     WriteZero,
+    InvalidInput,
     InvalidData,
 
     // os errors
@@ -140,6 +158,7 @@ impl fmt::Display for ErrorKind {
         match self {
             ErrorKind::UnexpectedEof => f.write_str("unexpected eof"),
             ErrorKind::WriteZero => f.write_str("write zero"),
+            ErrorKind::InvalidInput => f.write_str("invalid input"),
             ErrorKind::InvalidData => f.write_str("invalid data"),
             ErrorKind::Interrupted => f.write_str("interrupted"),
             ErrorKind::Other => f.write_str("other"),

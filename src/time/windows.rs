@@ -2,7 +2,8 @@ use core::time::Duration;
 use core::sync::atomic::{AtomicI64, Ordering};
 use core::ffi::c_long;
 
-use crate::sys::windows::types::*;
+use crate::sys::windows::minwindef::*;
+use crate::sys::windows::corecrt::errno_t;
 use super::{time_t, Tm};
 
 unsafe extern "C" {

@@ -4,6 +4,7 @@ extern crate alloc;
 use alloc::string::String;
 
 use crate::sys::libc::{c_size_t, errno};
+use crate::os_str::OsStr;
 
 use super::ErrorKind;
 
@@ -21,6 +22,8 @@ unsafe extern "C" {
     // musl, bionic
     #[cfg(any(target_os = "android", target_env = "musl"))]
     fn strerror_r(errnum: c_int, buf: *mut u8, size: c_size_t) -> c_int;
+    #[link_name = "gai_strerror"]
+    fn c_gai_strerror(errcode: c_int) -> *const u8;
 }
 
 pub fn strerror(errno: RawError) -> String {
@@ -35,5 +38,12 @@ pub fn os_to_errorkind(os: RawError) -> ErrorKind {
     match os {
         errno::EINTR => ErrorKind::Interrupted,
         _ => ErrorKind::Other,
+    }
+}
+
+pub fn gai_strerror(code: c_int) -> String {
+    unsafe {
+        let ptr = c_gai_strerror(code);
+        OsStr::from_ptr(ptr).to_utf8_lossy()
     }
 }

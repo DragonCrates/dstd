@@ -37,11 +37,9 @@ pub fn handle_panic(file: &str, line: u32, column: u32, message: PanicMessage<'_
 }
 
 // If we need more wide strings, we could do similar: https://github.com/rust-lang/rust/blob/1625626af12c1f95540530c6fc1242ff10aaba0a/library/std/src/sys/pal/windows/api.rs#L38
-#[cfg(windows)]
 macro_rules! w {
     ($($ch:literal),*) => {
         &[$($ch as u16),*]
     }
 }
-#[cfg(windows)]
 use w;

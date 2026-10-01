@@ -1,4 +1,4 @@
-use crate::io::{Result, Read, Write, Seek, SeekFrom};
+use crate::io::{self, Read, Write, Seek, SeekFrom};
 use crate::path::Path;
 
 #[cfg(windows)]
@@ -13,7 +13,7 @@ crate::block! {
     use unix as sys;
 }
 
-pub type Handle = sys::Handle;
+pub type RawHandle = sys::RawHandle;
 
 #[derive(Default)]
 pub struct OpenOptions {
@@ -61,58 +61,52 @@ impl OpenOptions {
         self
     }
 
-    pub fn open<'a, P: Into<Path<'a>>>(&self, name: P) -> Result<File> {
+    pub fn open<'a, P: Into<Path<'a>>>(&self, name: P) -> io::Result<File> {
         let name = name.into();
         let mut buf = [0; 256];
         let name_os = name.to_os_with(&mut buf)?;
 
-        let handle = sys::open(&name_os, self)?;
-        Ok(File { handle })
+        let file = sys::File::open(&name_os, self)?;
+        Ok(File { file })
     }
 }
 
 pub struct File {
-    handle: Handle,
+    file: sys::File,
 }
 
 impl File {
-    pub fn create<'a, P: Into<Path<'a>>>(name: P) -> Result<File> {
+    pub fn options() -> OpenOptions {
+        OpenOptions::new()
+    }
+
+    pub fn create<'a, P: Into<Path<'a>>>(name: P) -> io::Result<File> {
         File::options().write(true).create(true).truncate(true).open(name)
     }
 
-    pub fn create_new<'a, P: Into<Path<'a>>>(name: P) -> Result<File> {
+    pub fn create_new<'a, P: Into<Path<'a>>>(name: P) -> io::Result<File> {
         File::options().write(true).create_new(true).open(name)
     }
 
-    pub fn open<'a, P: Into<Path<'a>>>(name: P) -> Result<File> {
+    pub fn open<'a, P: Into<Path<'a>>>(name: P) -> io::Result<File> {
         File::options().read(true).open(name)
-    }
-
-    pub fn options() -> OpenOptions {
-        OpenOptions::new()
     }
 }
 
 impl Read for File {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        sys::read(self.handle, buf)
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.file.read(buf)
     }
 }
 
 impl Write for File {
-    fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        sys::write(self.handle, buf)
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.file.write(buf)
     }
 }
 
 impl Seek for File {
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
-        sys::seek(self.handle, pos)
-    }
-}
-
-impl Drop for File {
-    fn drop(&mut self) {
-        sys::close(self.handle);
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        self.file.seek(pos)
     }
 }

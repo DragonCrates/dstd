@@ -7,7 +7,7 @@ use dstd::thread;
 
 dstd::main!(main);
 fn main() -> io::Result<()> {
-    let server = TcpListener::bind("0.0.0.0:8080".parse().unwrap())?;
+    let server = TcpListener::bind("0.0.0.0:8080")?;
     loop {
         let (client, addr) = server.accept()?;
         println!("Request from {addr}");

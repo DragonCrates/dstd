@@ -1,6 +1,6 @@
 use core::ffi::c_void;
 
-use crate::sys::windows::types::{DWORD, PVOID, BOOL};
+use crate::sys::windows::minwindef::*;
 use crate::io::Error;
 
 pub type Key = DWORD;
