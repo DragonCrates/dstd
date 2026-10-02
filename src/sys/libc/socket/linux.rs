@@ -24,4 +24,5 @@ pub const SOCK_CLOEXEC: c_int = fcntl::O_CLOEXEC;
 pub const SOCK_NONBLOCK: c_int = fcntl::O_NONBLOCK;
 
 pub const SOL_SOCKET: c_int = 1;
-pub const SO_REUSEPORT: c_int = 15;
+
+pub const SO_REUSEADDR: c_int = 2;

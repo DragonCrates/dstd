@@ -22,7 +22,7 @@ impl Socket {
         let fd = unsafe { socket(domain, socket_type | SOCK_CLOEXEC, 0) };
         if fd == -1 { return Err(Error::last_os_error()); }
         let this = Socket { fd };
-        this.set_reuseport()?;
+        this.set_reuseaddr()?;
         Ok(this)
     }
 
@@ -31,9 +31,9 @@ impl Socket {
     }
 
     /// This allows to quickly reuse released ports without getting EADDRINUSE
-    fn set_reuseport(&self) -> io::Result<()> {
+    fn set_reuseaddr(&self) -> io::Result<()> {
         let optval: i32 = 1;
-        let ret = unsafe { setsockopt(self.fd, SOL_SOCKET, SO_REUSEPORT, &optval as *const _ as *const c_void, 4) };
+        let ret = unsafe { setsockopt(self.fd, SOL_SOCKET, SO_REUSEADDR, &optval as *const _ as *const c_void, 4) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(())
     }

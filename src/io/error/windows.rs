@@ -6,6 +6,7 @@ use alloc::format;
 use alloc::string::String;
 
 use crate::sys::windows::minwindef::*;
+use crate::sys::windows::wsa_errnos;
 
 use super::ErrorKind;
 
