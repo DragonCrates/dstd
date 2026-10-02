@@ -34,9 +34,12 @@ pub fn strerror(errno: RawError) -> String {
     String::from_utf8_lossy(&buf[..zero]).into()
 }
 
+// EAGAIN and EWOULDBLOCK are the same thing
+#[cfg_attr(any(target_os = "linux", target_os = "android"), allow(unreachable_patterns))]
 pub fn os_to_errorkind(os: RawError) -> ErrorKind {
     match os {
         errno::EINTR => ErrorKind::Interrupted,
+        errno::EAGAIN | errno::EWOULDBLOCK => ErrorKind::WouldBlock,
         _ => ErrorKind::Other,
     }
 }

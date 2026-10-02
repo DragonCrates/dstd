@@ -149,6 +149,7 @@ pub enum ErrorKind {
 
     // os errors
     Interrupted,
+    WouldBlock,
 
     Other,
 }
@@ -161,6 +162,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::InvalidInput => f.write_str("invalid input"),
             ErrorKind::InvalidData => f.write_str("invalid data"),
             ErrorKind::Interrupted => f.write_str("interrupted"),
+            ErrorKind::WouldBlock => f.write_str("would block"),
             ErrorKind::Other => f.write_str("other"),
         }
     }

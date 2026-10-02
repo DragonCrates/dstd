@@ -4,6 +4,7 @@ pub mod minwindef;
 pub mod corecrt;
 pub mod handleapi;
 pub mod winsock2;
+pub mod wsa_errnos;
 pub mod fileapi;
 pub mod wincontypes;
 pub mod consoleapi;

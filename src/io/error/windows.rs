@@ -60,8 +60,12 @@ pub fn strerror(error: DWORD) -> String {
     String::from_utf16_lossy(&buf[..end])
 }
 
-pub fn os_to_errorkind(_os: DWORD) -> ErrorKind {
-    ErrorKind::Other
+pub fn os_to_errorkind(os: DWORD) -> ErrorKind {
+    match os {
+        wsa_errnos::WSAEINTR => ErrorKind::Interrupted,
+        wsa_errnos::WSAEWOULDBLOCK => ErrorKind::WouldBlock,
+        _ => ErrorKind::Other,
+    }
 }
 
 pub fn gai_strerror(code: c_int) -> String {

@@ -13,7 +13,8 @@ pub mod errno {
 
     // Linux errno
     pub const EINTR: i32 = 4;
-    pub const EAGAIN: i32 = 11;
+    pub const EWOULDBLOCK: i32 = 11;
+    pub const EAGAIN: i32 = EWOULDBLOCK;
 
     unsafe extern "C" {
         /// Returns the address of the calling thread's `errno` storage.
