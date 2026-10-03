@@ -43,7 +43,7 @@ impl<T> Channel<T> {
     }
 
     /// Appends `item` to the back of the channel
-    pub fn push(&self, item: T) {
+    pub fn send(&self, item: T) {
         self.queue.lock().push_back(item);
         // We need notify_all because it is possible to wait for an item without consuming it, via Channel::wait() or Channel::peek()
         self.read_cond.notify_all();
@@ -53,8 +53,8 @@ impl<T> Channel<T> {
     /// full (holds at least `bound` elements). After returning, the queue
     /// holds at most `bound` elements.
     ///
-    /// Example: `channel.push_bounded("item", 1)` ensures it holds at most 1 element, and `channel.push_bounded("item", 0)` simply blocks forever
-    pub fn push_bounded(&self, item: T, bound: usize) {
+    /// Example: `channel.send_bounded("item", 1)` ensures it holds at most 1 element, and `channel.push_bounded("item", 0)` simply blocks forever
+    pub fn send_bounded(&self, item: T, bound: usize) {
         let mut queue = self.queue.lock();
         loop {
             if queue.len() < bound {
