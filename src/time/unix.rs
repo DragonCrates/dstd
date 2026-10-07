@@ -3,7 +3,7 @@ use core::time::Duration;
 use core::ffi::{c_int, c_long};
 use core::ops::{Add, Sub};
 
-use super::{Tm, time_t};
+use super::{time_t, Tm, Timespec};
 use crate::io::Error;
 use crate::sys::libc::errno;
 
@@ -12,19 +12,20 @@ crate::block! {
     /// Clock ID for the clock and timer functions
     #[allow(non_camel_case_types)]
     type clockid_t = c_int;
+    const CLOCK_REALTIME: clockid_t = 0;
     const CLOCK_MONOTONIC: clockid_t = 1;
     const TIMER_ABSTIME: c_int = 0x01;
 }
 
 unsafe extern "C" {
     /// Retrieve the time of the specified clock clockid
-    fn clock_gettime(clockid: clockid_t, tp: *mut Timespec) -> c_int;
+    fn clock_gettime(clockid: clockid_t, tp: *mut timespec) -> c_int;
     /// High-resolution sleep with specifiable clock
     fn clock_nanosleep(
         clockid: clockid_t,
         flags: c_int,
-        t: *const Timespec,
-        remain: *mut Timespec,
+        t: *const timespec,
+        remain: *mut timespec,
     ) -> c_int;
     /// Converts the calendar time timep to broken-down time representation, expressed in Coordinated Universal Time (UTC)
     pub fn gmtime_r(timep: *const time_t, result: *mut Tm) -> *mut Tm;
@@ -32,16 +33,17 @@ unsafe extern "C" {
     pub fn localtime_r(timep: *const time_t, result: *mut Tm) -> *mut Tm;
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+// Ord is OK as long as our timespec is normalized
+#[derive(Default, Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
-pub struct Timespec {
-    pub tv_sec: time_t,
-    pub tv_nsec: c_long,
+pub struct timespec {
+    tv_sec: time_t,
+    tv_nsec: c_long,
 }
 
-impl Timespec {
-    pub fn from_duration(dur: Duration) -> Timespec {
-        Timespec {
+impl timespec {
+    pub fn from_duration(dur: Duration) -> timespec {
+        timespec {
             tv_sec: dur.as_secs().try_into().unwrap_or(time_t::MAX),
             tv_nsec: dur.subsec_nanos().into(),
         }
@@ -52,10 +54,10 @@ impl Timespec {
     }
 }
 
-impl Add for Timespec {
-    type Output = Timespec;
-    fn add(self, rhs: Timespec) -> Timespec {
-        let mut out = Timespec {
+impl Add for timespec {
+    type Output = timespec;
+    fn add(self, rhs: timespec) -> timespec {
+        let mut out = timespec {
             tv_sec: self.tv_sec.saturating_add(rhs.tv_sec),
             tv_nsec: self.tv_nsec + rhs.tv_nsec,
         };
@@ -67,10 +69,10 @@ impl Add for Timespec {
     }
 }
 
-impl Sub for Timespec {
-    type Output = Timespec;
-    fn sub(self, rhs: Timespec) -> Timespec {
-        let mut out = Timespec {
+impl Sub for timespec {
+    type Output = timespec;
+    fn sub(self, rhs: timespec) -> timespec {
+        let mut out = timespec {
             tv_sec: self.tv_sec.saturating_sub(rhs.tv_sec),
             tv_nsec: self.tv_nsec - rhs.tv_nsec,
         };
@@ -82,12 +84,12 @@ impl Sub for Timespec {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Instant(Timespec);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Instant(timespec);
 
 impl Instant {
     pub fn now() -> Instant {
-        let mut out = Timespec::default();
+        let mut out = timespec::default();
         let ret = unsafe { clock_gettime(
             CLOCK_MONOTONIC, // clockid
             &mut out, // tp
@@ -123,7 +125,7 @@ pub fn localtime(time: time_t) -> Option<Tm> {
 
 pub fn sleep(dur: Duration) {
     let start = Instant::now().0;
-    let end = start + Timespec::from_duration(dur);
+    let end = start + timespec::from_duration(dur);
     loop {
         let res = unsafe { clock_nanosleep(
             CLOCK_MONOTONIC, // clockid
@@ -139,4 +141,14 @@ pub fn sleep(dur: Duration) {
             panic!("clock_nanosleep failed: {}", Error::from_raw_os_error(res));
         }
     }
+}
+
+pub fn time() -> Timespec {
+    let mut out = timespec::default();
+    let ret = unsafe { clock_gettime(
+        CLOCK_REALTIME, // clockid
+        &mut out, // tp
+    ) };
+    assert!(ret != -1, "clock_gettime failed: {}", Error::last_os_error());
+    Timespec::new_normalized(out.tv_sec, out.tv_nsec as u32)
 }

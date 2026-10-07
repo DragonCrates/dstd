@@ -1,6 +1,5 @@
 //! Time functions
 
-use core::ptr;
 use core::ffi::{c_int, c_long, c_char};
 
 #[cfg(windows)]
@@ -15,15 +14,11 @@ crate::block! {
     use unix as sys;
 }
 
-unsafe extern "C" {
-    fn time(tloc: *mut time_t) -> time_t;
-}
-
 #[doc(no_inline)]
 pub use core::time::{Duration, TryFromFloatSecsError};
 
 /// Monotonic clock, used to measure time
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Instant(sys::Instant);
 
 impl Instant {
@@ -53,44 +48,88 @@ impl Instant {
 // TODO: impl Sub Instand and Add/Sub Duration
 
 /// System clock, that represents real world time
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SystemTime {
-    time: time_t,
+    time: Timespec
 }
 
 impl SystemTime {
     /// Returns current real time
     pub fn now() -> SystemTime {
-        unsafe { SystemTime {
-            time: time(ptr::null_mut())
-        } }
+        SystemTime {
+            time: sys::time()
+        }
     }
 
     /// Formats this time, using global timezone
     pub fn to_global(&self) -> Option<FormatTime> {
-        let tm = sys::gmtime(self.time)?;
+        let tm = sys::gmtime(self.as_unix())?;
         Some(FormatTime::from_tm(tm))
     }
 
     /// Formats this time, using local timezone
     pub fn to_local(&self) -> Option<FormatTime> {
-        let tm = sys::localtime(self.time)?;
+        let tm = sys::localtime(self.as_unix())?;
         Some(FormatTime::from_tm(tm))
     }
 
     /// Returns unix timestamp (`time_t`)
     pub fn as_unix(&self) -> time_t {
-        self.time
+        self.time.as_secs()
     }
 
     /// Constructs `SystemTime` from a unix timestamp
     pub fn from_unix(time: time_t) -> SystemTime {
-        SystemTime { time }
+        SystemTime { time: Timespec::from_secs(time) }
     }
 
-    // TODO: as_duration, from_duration
-    // Probably need to expose struct timespec or create new duration
-    // Or just expost .as_nanos
+    pub fn as_timespec(&self) -> Timespec {
+        self.time
+    }
+
+    pub fn from_timespec(time: Timespec) -> SystemTime {
+        SystemTime { time }
+    }
+}
+
+/// Like [`Duration`], but uses a signed `time_t`. This is not a representation of `struct timespec` - think of it as of a signed [`Duration`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Timespec {
+    secs: i64,
+    nanos: u32,
+}
+
+const NANOS_PER_SEC: u32 = 1_000_000_000;
+impl Timespec {
+    /// Constructs a new `Timespec`. If the number of nanoseconds is greater than 1 billion, they will carry into the seconds counter
+    pub fn new(secs: i64, nanos: u32) -> Timespec {
+        if nanos < NANOS_PER_SEC {
+            Timespec { secs, nanos }
+        } else {
+            let secs = secs + (nanos / NANOS_PER_SEC) as i64;
+            let nanos = nanos % NANOS_PER_SEC;
+            Timespec { secs, nanos }
+        }
+    }
+
+    fn new_normalized(secs: i64, nanos: u32) -> Timespec {
+        Timespec { secs, nanos }
+    }
+
+    /// Returns the number of seconds contained within this `Timespec`
+    pub fn as_secs(&self) -> i64 {
+        self.secs
+    }
+
+    /// Creates a new `Timespec` from the specified number of seconds
+    pub fn from_secs(secs: i64) -> Timespec {
+        Timespec { secs, nanos: 0 }
+    }
+
+    /// Returns the fractional part of this `Timespec` in nanoseconds. Valid range - [0; 1_000_000_000)
+    pub fn subsec_nanos(&self) -> u32 {
+        self.nanos
+    }
 }
 
 /// Formatted time structure
@@ -119,7 +158,7 @@ impl FormatTime {
     pub fn to_system(&self) -> SystemTime {
         let hms = hms_to_time(self.hour, self.min, self.sec);
         let ymd = epoch_days_fast(self.year, self.mon+1, self.day) * 86400;
-        let time = hms + ymd - self.tz_offset as time_t;
+        let time = Timespec::from_secs(hms + ymd - self.tz_offset as i64);
         SystemTime { time }
     }
 

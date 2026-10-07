@@ -3,8 +3,9 @@ use core::sync::atomic::{AtomicI64, Ordering};
 use core::ffi::c_long;
 
 use crate::sys::windows::minwindef::*;
+use crate::sys::windows::minwinbase::*;
 use crate::sys::windows::corecrt::errno_t;
-use super::{time_t, Tm};
+use super::{time_t, Tm, Timespec};
 
 unsafe extern "C" {
     /// Retrieves the current value of the performance counter
@@ -21,6 +22,10 @@ unsafe extern "C" {
     fn _localtime64_s(tmDest: *mut Tm, sourceTime: *const time_t) -> errno_t;
     /// Retrieves the difference in seconds between coordinated universal time (UTC) and local time
     fn _get_timezone(seconds: *mut c_long) -> errno_t;
+    /// Retrieves the current system date and time. The information is in Coordinated Universal Time (UTC) format.
+    fn GetSystemTimeAsFileTime(
+        /* [out] */ lpSystemTimeAsFileTime: LPFILETIME
+    );
 }
 
 static FREQ: AtomicI64 = AtomicI64::new(0);
@@ -37,7 +42,7 @@ fn get_freq() -> LARGE_INTEGER {
     freq
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Instant(LARGE_INTEGER);
 
 impl Instant {
@@ -86,4 +91,20 @@ unsafe extern "C" {
 
 pub fn sleep(dur: Duration) {
     unsafe { Sleep(dur.as_millis() as DWORD); }
+}
+
+const WINDOWS_TICK: i64 = 10_000_000;
+const SEC_TO_UNIX_EPOCH: i64 = 11644473600;
+fn filetime_to_timespec(ft: FILETIME) -> Timespec {
+    let t = (ft.dwHighDateTime as i64) << 32 | ft.dwLowDateTime as i64;
+    let relative_to_unix_100ns = t - SEC_TO_UNIX_EPOCH * WINDOWS_TICK;
+    let secs = relative_to_unix_100ns / WINDOWS_TICK;
+    let nanos = relative_to_unix_100ns % WINDOWS_TICK * 100;
+    Timespec::new_normalized(secs, nanos as u32)
+}
+
+pub fn time() -> Timespec {
+    let mut out = FILETIME::default();
+    unsafe { GetSystemTimeAsFileTime(&mut out); }
+    filetime_to_timespec(out)
 }

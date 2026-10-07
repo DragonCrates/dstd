@@ -1,6 +1,7 @@
 #![allow(nonstandard_style, clippy::upper_case_acronyms)]
 
 pub mod minwindef;
+pub mod minwinbase;
 pub mod corecrt;
 pub mod handleapi;
 pub mod winsock2;
