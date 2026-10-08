@@ -1,9 +1,8 @@
 use core::ptr;
-use core::time::Duration;
 use core::ffi::{c_int, c_long};
 use core::ops::{Add, Sub};
 
-use super::{time_t, Tm, Timespec};
+use super::{time_t, Tm, TimeDelta};
 use crate::io::Error;
 use crate::sys::libc::errno;
 
@@ -42,15 +41,15 @@ pub struct timespec {
 }
 
 impl timespec {
-    pub fn from_duration(dur: Duration) -> timespec {
+    pub fn from_duration(dur: TimeDelta) -> timespec {
         timespec {
-            tv_sec: dur.as_secs().try_into().unwrap_or(time_t::MAX),
-            tv_nsec: dur.subsec_nanos().into(),
+            tv_sec: dur.as_secs(),
+            tv_nsec: dur.subsec_nanos() as c_long,
         }
     }
 
-    pub fn to_duration(self) -> Duration {
-        Duration::new(self.tv_sec as u64, self.tv_nsec as u32)
+    pub fn to_duration(self) -> TimeDelta {
+        TimeDelta::new(self.tv_sec, self.tv_nsec as u32)
     }
 }
 
@@ -98,8 +97,22 @@ impl Instant {
         Instant(out)
     }
 
-    pub fn duration_since(&self, earlier: Instant) -> Duration {
+    pub fn duration_since(&self, earlier: Instant) -> TimeDelta {
         (self.0 - earlier.0).to_duration()
+    }
+}
+
+impl Add<TimeDelta> for Instant {
+    type Output = Instant;
+    fn add(self, rhs: TimeDelta) -> Instant {
+        Instant(self.0 + timespec::from_duration(rhs))
+    }
+}
+
+impl Sub<TimeDelta> for Instant {
+    type Output = Instant;
+    fn sub(self, rhs: TimeDelta) -> Instant {
+        Instant(self.0 - timespec::from_duration(rhs))
     }
 }
 
@@ -123,7 +136,7 @@ pub fn localtime(time: time_t) -> Option<Tm> {
     Some(tm)
 }
 
-pub fn sleep(dur: Duration) {
+pub fn sleep(dur: TimeDelta) {
     let start = Instant::now().0;
     let end = start + timespec::from_duration(dur);
     loop {
@@ -143,12 +156,12 @@ pub fn sleep(dur: Duration) {
     }
 }
 
-pub fn time() -> Timespec {
+pub fn time() -> TimeDelta {
     let mut out = timespec::default();
     let ret = unsafe { clock_gettime(
         CLOCK_REALTIME, // clockid
         &mut out, // tp
     ) };
     assert!(ret != -1, "clock_gettime failed: {}", Error::last_os_error());
-    Timespec::new_normalized(out.tv_sec, out.tv_nsec as u32)
+    TimeDelta::new_normalized(out.tv_sec, out.tv_nsec as u32)
 }

@@ -1,9 +1,10 @@
 use core::cell::UnsafeCell;
-use core::time::Duration;
 
 extern crate alloc;
 use alloc::sync::Arc;
 use alloc::boxed::Box;
+
+use crate::time::TimeDelta;
 
 #[cfg(unix)]
 crate::block! {
@@ -68,12 +69,12 @@ pub fn available_parallelism() -> usize {
     sys::ncpu()
 }
 
-pub fn sleep(dur: Duration) {
+pub fn sleep(dur: TimeDelta) {
     crate::time::sleep(dur);
 }
 
-pub fn usleep(ms: u64) {
-    sleep(Duration::from_millis(ms));
+pub fn usleep(ms: i64) {
+    sleep(TimeDelta::from_millis(ms));
 }
 
 // TODO: thread names

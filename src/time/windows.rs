@@ -1,11 +1,11 @@
-use core::time::Duration;
 use core::sync::atomic::{AtomicI64, Ordering};
 use core::ffi::c_long;
+use core::ops::{Add, Sub};
 
 use crate::sys::windows::minwindef::*;
 use crate::sys::windows::minwinbase::*;
 use crate::sys::windows::corecrt::errno_t;
-use super::{time_t, Tm, Timespec};
+use super::{time_t, Tm, TimeDelta};
 
 unsafe extern "C" {
     /// Retrieves the current value of the performance counter
@@ -45,6 +45,7 @@ fn get_freq() -> LARGE_INTEGER {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Instant(LARGE_INTEGER);
 
+const NANOS_PER_SEC: i64 = 1_000_000_000;
 impl Instant {
     pub fn now() -> Instant {
         let mut li: LARGE_INTEGER = 0;
@@ -52,10 +53,36 @@ impl Instant {
         Instant(li)
     }
 
-    pub fn duration_since(self, earlier: Instant) -> Duration {
-        let diff = self.0 - earlier.0;
-        let freq_us = get_freq() / 1_000_000;
-        Duration::from_micros((diff / freq_us) as u64)
+    pub fn duration_since(&self, earlier: Instant) -> TimeDelta {
+        Instant(self.0 - earlier.0).as_duration()
+    }
+
+    fn as_duration(&self) -> TimeDelta {
+        let freq = get_freq();
+        let secs = self.0 / freq;
+        let nanos = (self.0 % freq) * NANOS_PER_SEC / freq;
+        TimeDelta::new(secs, nanos as u32)
+    }
+
+    fn from_duration(dur: TimeDelta) -> Instant {
+        let secs = dur.as_secs();
+        let nanos = dur.subsec_nanos() as i64;
+        let freq = get_freq();
+        Instant(secs * freq + nanos * freq / NANOS_PER_SEC)
+    }
+}
+
+impl Add<TimeDelta> for Instant {
+    type Output = Instant;
+    fn add(self, rhs: TimeDelta) -> Instant {
+        Instant(self.0 + Instant::from_duration(rhs).0)
+    }
+}
+
+impl Sub<TimeDelta> for Instant {
+    type Output = Instant;
+    fn sub(self, rhs: TimeDelta) -> Instant {
+        Instant(self.0 - Instant::from_duration(rhs).0)
     }
 }
 
@@ -89,22 +116,22 @@ unsafe extern "C" {
     );
 }
 
-pub fn sleep(dur: Duration) {
+pub fn sleep(dur: TimeDelta) {
     unsafe { Sleep(dur.as_millis() as DWORD); }
 }
 
 const WINDOWS_TICK: i64 = 10_000_000;
 const SEC_TO_UNIX_EPOCH: i64 = 11644473600;
-fn filetime_to_timespec(ft: FILETIME) -> Timespec {
+fn filetime_to_timedelta(ft: FILETIME) -> TimeDelta {
     let t = (ft.dwHighDateTime as i64) << 32 | ft.dwLowDateTime as i64;
     let relative_to_unix_100ns = t - SEC_TO_UNIX_EPOCH * WINDOWS_TICK;
     let secs = relative_to_unix_100ns / WINDOWS_TICK;
     let nanos = relative_to_unix_100ns % WINDOWS_TICK * 100;
-    Timespec::new_normalized(secs, nanos as u32)
+    TimeDelta::new_normalized(secs, nanos as u32)
 }
 
-pub fn time() -> Timespec {
+pub fn time() -> TimeDelta {
     let mut out = FILETIME::default();
     unsafe { GetSystemTimeAsFileTime(&mut out); }
-    filetime_to_timespec(out)
+    filetime_to_timedelta(out)
 }
