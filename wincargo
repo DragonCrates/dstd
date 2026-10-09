@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if x86_64-w64-mingw32-gcc --version | grep clang >/dev/null; then
+    # llvm-mingw
+    WIN_TARGET="x86_64-pc-windows-gnullvm"
+    export CARGO_TARGET_X86_64_PC_WINDOWS_GNULLVM_RUNNER="wine"
+else
+    # gcc
+    WIN_TARGET="x86_64-pc-windows-gnu"
+    export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER="wine"
+fi
+
+cargo "$@" --target "$WIN_TARGET"

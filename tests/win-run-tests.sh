@@ -3,5 +3,5 @@ set -e
 
 cd examples
 for i in *.rs; do
-    ../../wincargo check --example ${i%.rs}
+    ../../wincargo run --example ${i%.rs} --release
 done
