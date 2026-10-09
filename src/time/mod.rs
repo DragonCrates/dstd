@@ -147,8 +147,8 @@ impl TimeDelta {
 
     /// Creates a new `TimeDelta` from the specified amount of milliseconds
     pub fn from_millis(millis: i64) -> TimeDelta {
-        let secs = millis / 1000;
-        let nanos = (millis % 1000) as u32 * 1_000_000;
+        let secs = millis.div_euclid(1000);
+        let nanos = millis.rem_euclid(1000) as u32 * 1_000_000;
         TimeDelta { secs, nanos }
     }
 
@@ -259,7 +259,7 @@ fn epoch_days_fast(y: i32, m: u8, d: u8) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{SystemTime, FormatTime};
+    use super::{SystemTime, FormatTime, TimeDelta};
 
     #[test]
     fn to_global_works() {
@@ -303,5 +303,14 @@ mod tests {
             tz_offset: 0,
         };
         assert_eq!(-1, t.to_system().as_unix());
+    }
+
+    #[test]
+    fn from_millis_negative() {
+        assert_eq!(-1, TimeDelta::from_millis(-1).as_millis());
+        assert_eq!(-1500, TimeDelta::from_millis(-1500).as_millis());
+        assert_eq!(-1000, TimeDelta::from_millis(-1000).as_millis());
+        assert_eq!(1500, TimeDelta::from_millis(1500).as_millis());
+        assert_eq!(0, TimeDelta::from_millis(0).as_millis());
     }
 }

@@ -137,6 +137,14 @@ pub fn localtime(time: time_t) -> Option<Tm> {
 }
 
 pub fn sleep(dur: TimeDelta) {
+    if dur.as_millis() < 0 {
+        // skip sleeping if duration is negative
+        if cfg!(debug_assertions) {
+            panic!("cannot sleep for a negative duration");
+        }
+        return;
+    }
+
     let start = Instant::now().0;
     let end = start + timespec::from_duration(dur);
     loop {

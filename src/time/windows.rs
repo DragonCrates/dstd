@@ -22,6 +22,8 @@ unsafe extern "C" {
     fn _localtime64_s(tmDest: *mut Tm, sourceTime: *const time_t) -> errno_t;
     /// Retrieves the difference in seconds between coordinated universal time (UTC) and local time
     fn _get_timezone(seconds: *mut c_long) -> errno_t;
+    /// Retrieves the number of seconds to add to the standard timezone to get the daylight savings version
+    fn _get_dstbias(seconds: *mut c_long) -> errno_t;
     /// Retrieves the current system date and time. The information is in Coordinated Universal Time (UTC) format.
     fn GetSystemTimeAsFileTime(
         /* [out] */ lpSystemTimeAsFileTime: LPFILETIME
@@ -35,7 +37,11 @@ fn get_freq() -> LARGE_INTEGER {
 
     if freq == 0 {
         // Initialize
-        unsafe { QueryPerformanceFrequency(&mut freq); }
+        unsafe {
+            // On Windows XP and later, QueryPerformanceFrequency always succeeds with valid parameters
+            // and never returns zero, so the return value is not checked
+            QueryPerformanceFrequency(&mut freq);
+        }
         FREQ.store(freq, Ordering::Relaxed);
     }
 
@@ -59,9 +65,10 @@ impl Instant {
 
     fn as_duration(&self) -> TimeDelta {
         let freq = get_freq();
-        let secs = self.0 / freq;
-        let nanos = (self.0 % freq) * NANOS_PER_SEC / freq;
-        TimeDelta::new(secs, nanos as u32)
+        // Need div_euclid because count may be negative
+        let secs = self.0.div_euclid(freq);
+        let nanos = self.0.rem_euclid(freq) * NANOS_PER_SEC / freq;
+        TimeDelta::new_normalized(secs, nanos as u32)
     }
 
     fn from_duration(dur: TimeDelta) -> Instant {
@@ -101,11 +108,15 @@ pub fn localtime(time: time_t) -> Option<Tm> {
         let ret = _localtime64_s(&mut tm, &time);
         if ret != 0 { return None; }
 
+        // Retrieve tm_gmtoff (windows does not have this field)
         let mut gmtoff = 0;
         let ret = _get_timezone(&mut gmtoff);
         if ret != 0 { return None; }
-        // Windows does not have such field in struct tm
-        tm.tm_gmtoff = gmtoff;
+        let mut dstbias = 0;
+        let ret = _get_dstbias(&mut dstbias);
+        if ret != 0 { return None; }
+        // `_get_timezone` returns seconds WEST of UTC, and `tm_gmtoff` is seconds EAST of UTC. So, make it negative
+        tm.tm_gmtoff = -(gmtoff + dstbias);
         Some(tm)
     }
 }
@@ -117,6 +128,14 @@ unsafe extern "C" {
 }
 
 pub fn sleep(dur: TimeDelta) {
+    if dur.as_millis() < 0 {
+        // skip sleeping if duration is negative
+        if cfg!(debug_assertions) {
+            panic!("cannot sleep for a negative duration");
+        }
+        return;
+    }
+
     unsafe { Sleep(dur.as_millis() as DWORD); }
 }
 
