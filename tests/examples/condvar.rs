@@ -46,7 +46,7 @@ fn main() {
         channel.queue.lock().push_back(i);
         println!("Send notification");
         channel.cond.notify_one();
-        thread::usleep(50);
+        thread::usleep(16);
     }
 
     t.join();
