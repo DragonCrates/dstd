@@ -36,8 +36,14 @@ mod linkage {
         // winsock
         #[link(name = "ws2_32")]
         unsafe extern "C" {}
-        // synchapi
+        // synchapi (WaitOnAddress, WakeByAddress, WakeByAddressAll)
         #[link(name = "synchronization")]
+        unsafe extern "C" {}
+        // shell32 (CommandLineToArgvW)
+        #[link(name = "shell32")]
+        unsafe extern "C" {}
+        // advapi32 (RtlGenRandom)
+        #[link(name = "advapi32")]
         unsafe extern "C" {}
     }
 
