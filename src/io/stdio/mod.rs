@@ -51,7 +51,7 @@ fn print_internal(out: &mut impl Write, args: fmt::Arguments) {
         let mut buf = BUF.lock();
         buf.clear();
         fmt::write(&mut *buf, args).expect("Display implementation returned an unexpected error");
-        let _ = out.write(buf.as_bytes());
+        let _ = out.write_all(buf.as_bytes());
     }
 }
 
