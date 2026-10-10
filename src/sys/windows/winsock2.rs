@@ -82,5 +82,8 @@ unsafe extern "C" {
     pub fn listen(s: SOCKET, backlog: c_int) -> c_int;
     pub fn accept(s: SOCKET, addr: *mut sockaddr, addrlen: *mut socklen_t) -> SOCKET;
     pub fn send(s: SOCKET, buf: *const u8, size: c_int, flags: c_int) -> c_int;
+    pub fn sendto(s: SOCKET, buf: *const u8, size: c_int, flags: c_int, to: *const sockaddr, tolen: c_int) -> c_int;
     pub fn recv(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int) -> c_int;
+    pub fn recvfrom(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int, from: *mut sockaddr, fromlen: c_int) -> c_int;
+    pub fn connect(s: SOCKET, name: *const sockaddr, namelen: c_int) -> c_int;
 }

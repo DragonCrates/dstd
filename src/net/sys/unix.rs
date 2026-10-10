@@ -62,22 +62,51 @@ impl Socket {
 
         Ok((Socket { fd }, SocketAddr::from_sockaddr(addr)))
     }
-}
 
-impl Read for Socket {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    pub fn connect(&self, addr: SocketAddr) -> io::Result<()> {
+        let sockaddr = addr.to_sockaddr();
+        let ret = unsafe { connect(self.fd, &sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(())
+    }
+
+    pub fn send(&self, buf: &[u8]) -> io::Result<usize> {
+        let ret = unsafe { send(self.fd, buf.as_ptr(), buf.len(), 0) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(ret as usize)
+    }
+
+    pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
+        let sockaddr = addr.to_sockaddr();
+        let ret = unsafe { sendto(self.fd, buf.as_ptr(), buf.len(), 0, &sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(ret as usize)
+    }
+
+    pub fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
         // TODO MSG_NOSIGNAL
         let ret = unsafe { recv(self.fd, buf.as_mut_ptr(), buf.len(), 0) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
+
+    pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
+        let mut sockaddr = sockaddr::default();
+        let ret = unsafe { recvfrom(self.fd, buf.as_mut_ptr(), buf.len(), 0, &mut sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok((ret as usize, SocketAddr::from_sockaddr(sockaddr)))
+    }
+}
+
+impl Read for Socket {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.recv(buf)
+    }
 }
 
 impl Write for Socket {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let ret = unsafe { send(self.fd, buf.as_ptr(), buf.len(), 0) };
-        if ret == -1 { return Err(Error::last_os_error()); }
-        Ok(ret as usize)
+        self.send(buf)
     }
 }
 

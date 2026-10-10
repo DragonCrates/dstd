@@ -10,8 +10,7 @@
 mod sys;
 
 // TODO:
-// udp, unix sockets, tcp connect
-// command spawn, pipes
+// unix sockets, command spawn, pipes
 
 pub mod alloc;
 pub mod collections;

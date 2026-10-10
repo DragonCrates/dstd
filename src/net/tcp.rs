@@ -1,7 +1,7 @@
 use core::net::SocketAddr;
 
 use crate::sys::addr::SocketAddrExt;
-use crate::io::{Read, Write, Result};
+use crate::io::{self, Read, Write};
 
 use super::sys::{RawSocket, Socket, SOCK_STREAM};
 use super::{AsRawSocket, ToSocketAddrs, for_each_addr};
@@ -15,30 +15,34 @@ pub struct TcpSocket {
 
 impl TcpSocket {
     /// Creates a new tcp socket. `addr` is only used to determine address family
-    pub fn new(addr: SocketAddr) -> Result<TcpSocket> {
+    pub fn new(addr: SocketAddr) -> io::Result<TcpSocket> {
         let socket = Socket::new(addr.address_family(), SOCK_STREAM)?;
         Ok(TcpSocket { socket })
     }
 
     /// Creates a new non-blocking tcp socket. `addr` is only used to determine address family
-    pub fn new_nonblock(addr: SocketAddr) -> Result<TcpSocket> {
+    pub fn new_nonblock(addr: SocketAddr) -> io::Result<TcpSocket> {
         let socket = Socket::new_nonblock(addr.address_family(), SOCK_STREAM)?;
         Ok(TcpSocket { socket })
     }
 
     /// Binds the socket to a local address
-    pub fn bind(&self, addr: SocketAddr) -> Result<()> {
+    pub fn bind(&self, addr: SocketAddr) -> io::Result<()> {
         self.socket.bind(addr)
     }
 
     /// Begins listening, and returns a [`TcpListener`]
-    pub fn listen(self) -> Result<TcpListener> {
+    pub fn listen(self) -> io::Result<TcpListener> {
         self.socket.listen()?;
         let socket = self.socket;
         Ok(TcpListener { socket })
     }
 
-    // TODO: connect
+    pub fn connect(self, addr: SocketAddr) -> io::Result<TcpStream> {
+        self.socket.connect(addr)?;
+        let socket = self.socket;
+        Ok(TcpStream { socket })
+    }
 }
 
 impl AsRawSocket for TcpSocket {
@@ -62,7 +66,7 @@ pub struct TcpListener {
 
 impl TcpListener {
     /// Creates a new `TcpListener` which will be bound to the specified address
-    pub fn bind<A: ToSocketAddrs>(addr: A) -> Result<TcpListener> {
+    pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<TcpListener> {
         for_each_addr(addr, |addr| {
             let sock = TcpSocket::new(addr)?;
             sock.bind(addr)?;
@@ -71,14 +75,14 @@ impl TcpListener {
     }
 
     /// Accept a new incoming connection from this listener
-    pub fn accept(&self) -> Result<(TcpStream, SocketAddr)> {
+    pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
         self.accept_ex(false)
     }
 
     /// Accept a new incoming connection from this listener, optionally in non-blocking mode
     ///
     /// `nonblock` controls if the newly accepted socket should be nonblocking. Leave it as `false` unless you are using an async runtime
-    pub fn accept_ex(&self, nonblock: bool) -> Result<(TcpStream, SocketAddr)> {
+    pub fn accept_ex(&self, nonblock: bool) -> io::Result<(TcpStream, SocketAddr)> {
         let (socket, addr) = self.socket.accept(nonblock)?;
         Ok((TcpStream { socket }, addr))
     }
@@ -99,19 +103,29 @@ impl AsRawSocket for TcpListener {
 }
 
 /// A TCP stream between a local and a remote socket
-// TODO: peek, shutdown, connect
+// TODO: peek, shutdown
 pub struct TcpStream {
     socket: Socket,
 }
 
+impl TcpStream {
+    /// Opens a TCP connection to a remote host
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> io::Result<TcpStream> {
+        for_each_addr(addr, |addr| {
+            let sock = TcpSocket::new(addr)?;
+            sock.connect(addr)
+        })
+    }
+}
+
 impl Read for TcpStream {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.socket.read(buf)
     }
 }
 
 impl Write for TcpStream {
-    fn write(&mut self, buf: &[u8]) -> Result<usize> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.socket.write(buf)
     }
 }

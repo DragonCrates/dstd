@@ -10,6 +10,8 @@ pub use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, IpAddr, Ipv4Addr, Ip
 
 mod to_socket_addrs;
 pub use to_socket_addrs::ToSocketAddrs;
+mod udp;
+pub use udp::UdpSocket;
 mod tcp;
 pub use tcp::{TcpSocket, TcpListener, TcpStream};
 
