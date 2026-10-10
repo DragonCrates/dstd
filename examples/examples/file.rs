@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 use dstd::prelude::*;
-use dstd::io::{self, Read};
+use dstd::io::{self, Read, Write};
 use dstd::fs::File;
 
 dstd::main!(main);
@@ -12,7 +12,7 @@ fn main() -> io::Result<()> {
 
     println!("examples/file.rs contents:");
     println!("====================");
-    print!("{}", String::from_utf8_lossy(&contents));
+    io::stdout().write_all(&contents)?;
     println!("====================");
     Ok(())
 }
