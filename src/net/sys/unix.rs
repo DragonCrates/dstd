@@ -143,7 +143,8 @@ pub fn lookup_host(addr: &str, port: u16) -> io::Result<AddrInfo> {
     let mut addrbuf = [0; 256];
     let c_addr = OsStr::from_str_with(addr, &mut addrbuf).unwrap();
 
-    let hints = addrinfo::default();
+    let mut hints = addrinfo::default();
+    hints.ai_socktype = SOCK_STREAM;
     let mut result = ptr::null_mut();
 
     let ret = unsafe { getaddrinfo(c_addr.as_ptr(), ptr::null(), &hints, &mut result) };
