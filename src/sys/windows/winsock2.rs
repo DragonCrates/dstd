@@ -71,6 +71,19 @@ unsafe extern "C" {
     ) -> c_int;
     pub fn WSAGetLastError() -> c_int;
     pub fn closesocket(socket: SOCKET) -> c_int;
+
+    /// The GetAddrInfoW function provides protocol-independent translation from a Unicode host name to an address.
+    pub fn GetAddrInfoW(
+        /* [in, optional] */ pNodeName: PCWSTR,
+        /* [in, optional] */ pServiceName: PCWSTR,
+        /* [in, optional] */ pHints: *const ADDRINFOW,
+        /* [out]          */ ppResult: *mut PADDRINFOW,
+    ) -> INT;
+
+    /// The FreeAddrInfoW function frees address information that the GetAddrInfoW function dynamically allocates in addrinfoW structures.
+    pub fn FreeAddrInfoW(
+        /* [in] */ pAddrInfo: PADDRINFOW
+    );
 }
 
 pub const WSA_FLAG_NO_HANDLE_INHERIT: DWORD = 0x80;
@@ -87,3 +100,17 @@ unsafe extern "C" {
     pub fn recvfrom(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int, from: *mut sockaddr, fromlen: c_int) -> c_int;
     pub fn connect(s: SOCKET, name: *const sockaddr, namelen: c_int) -> c_int;
 }
+
+#[repr(C)]
+#[derive(Default)]
+pub struct ADDRINFOW {
+    pub ai_flags: c_int,
+    pub ai_family: c_int,
+    pub ai_socktype: c_int,
+    pub ai_protocol: c_int,
+    pub ai_addrlen: usize,
+    pub ai_canonname: PWSTR,
+    pub ai_addr: *mut sockaddr,
+    pub ai_next: *mut ADDRINFOW,
+}
+pub type PADDRINFOW = *mut ADDRINFOW;

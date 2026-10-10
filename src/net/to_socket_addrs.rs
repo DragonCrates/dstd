@@ -8,7 +8,8 @@ use alloc::vec;
 use alloc::vec::Vec;
 use alloc::string::String;
 
-use crate::io;
+use crate::io::{self, Error};
+use super::sys;
 
 /// A trait for objects which can be converted or resolved to one or more [`SocketAddr`] values
 pub trait ToSocketAddrs {
@@ -85,12 +86,16 @@ impl ToSocketAddrs for (&str, u16) {
     }
 }
 
+// TODO OsStr
+
 impl ToSocketAddrs for (String, u16) {
     type Iter = vec::IntoIter<SocketAddr>;
     fn to_socket_addrs(&self) -> io::Result<vec::IntoIter<SocketAddr>> {
         (&*self.0, self.1).to_socket_addrs()
     }
 }
+
+// TODO OsString
 
 // accepts strings like 'localhost:12345'
 impl ToSocketAddrs for str {
@@ -105,6 +110,8 @@ impl ToSocketAddrs for str {
         lookup_host_string(self).map(|addrs| Vec::from_iter(addrs).into_iter())
     }
 }
+
+// TODO OsStr
 
 impl<'a> ToSocketAddrs for &'a [SocketAddr] {
     type Iter = iter::Cloned<slice::Iter<'a, SocketAddr>>;
@@ -128,25 +135,27 @@ impl ToSocketAddrs for String {
     }
 }
 
-fn lookup_host(_addr: &str, _port: u16) -> io::Result<vec::IntoIter<SocketAddr>> {
-    todo!()
-}
+// TODO OsString
 
-fn lookup_host_string(_addr: &str) -> io::Result<vec::IntoIter<SocketAddr>> {
-    /*
-
+fn lookup_host_string(addr: &str) -> io::Result<vec::IntoIter<SocketAddr>> {
     // Split the string by ':' and convert the second part to u16...
-    let Some((host, port_str)) = addr.rsplit_once(':') else {
-        return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid socket address"));
+    let (host, port_str) = match addr.rsplit_once(':') {
+        Some(v) => v,
+        //return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid socket address"));
+        None => return Err(Error::new_no_addresses()),
     };
-    let Ok(port) = port_str.parse::<u16>() else {
-        return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid port value"));
+
+    let port: u16 = match port_str.parse() {
+        Ok(port) => port,
+        //return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid port value"));
+        Err(_) => return Err(Error::new_no_addresses()),
     };
 
     // ... and make the system look up the host.
-    crate::sys::net::lookup_host(host, port)
+    lookup_host(host, port)
+}
 
-    */
-
-    todo!()
+fn lookup_host(addr: &str, port: u16) -> io::Result<vec::IntoIter<SocketAddr>> {
+    let addrs: Vec<_> = sys::lookup_host(addr, port)?.collect();
+    Ok(addrs.into_iter())
 }

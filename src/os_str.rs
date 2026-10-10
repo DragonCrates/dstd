@@ -208,6 +208,7 @@ impl fmt::Display for OsUtf8Error {
 
 impl Error for OsUtf8Error {}
 
+// TODO windows.rs unix.rs
 fn from_str_with<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, OsStrError> {
     #[cfg(unix)]
     let len = s.len()+1;

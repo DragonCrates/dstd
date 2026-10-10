@@ -24,7 +24,7 @@ crate::block! {
         unsafe {
             let mut argc = 0;
             let argv = CommandLineToArgvW(GetCommandLineW(), &mut argc);
-            ARGS = slice::from_raw_parts(argv, argc as usize);
+            ARGS = slice::from_raw_parts(argv as *const *const _, argc as usize);
         }
     }
 }

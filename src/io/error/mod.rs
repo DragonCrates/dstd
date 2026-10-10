@@ -74,7 +74,7 @@ impl Error {
         }
     }
 
-    pub(crate) fn new_gai(code: c_int) -> Error {
+    pub(crate) fn new_addrinfo(code: c_int) -> Error {
         Error { repr: Repr::AddrInfo(code) }
     }
 

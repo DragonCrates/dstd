@@ -8,6 +8,7 @@ use crate::sys::windows::winsock2::*;
 use crate::sys::addr::{sockaddr, SocketAddrExt};
 use crate::io::{self, Error, Read, Write};
 use crate::net::AsRawSocket;
+use crate::os_str::OsStr;
 
 pub type RawSocket = SOCKET;
 
@@ -146,5 +147,47 @@ impl AsRawSocket for Socket {
 impl Drop for Socket {
     fn drop(&mut self) {
         unsafe { closesocket(self.handle); }
+    }
+}
+
+pub struct AddrInfo {
+    first: *const ADDRINFOW,
+    next: *const ADDRINFOW,
+    port: u16,
+}
+
+pub fn lookup_host(addr: &str, port: u16) -> io::Result<AddrInfo> {
+    let mut addrbuf = [0; 256];
+    let c_addr = OsStr::from_str_with(addr, &mut addrbuf).unwrap();
+    let hints = ADDRINFOW::default();
+    let mut result = ptr::null_mut();
+    let ret = unsafe { GetAddrInfoW(c_addr.as_ptr(), ptr::null(), &hints, &mut result) };
+    if ret != 0 { return Err(Error::new_addrinfo(ret)); }
+    Ok(AddrInfo {
+        first: result,
+        next: result,
+        port
+    })
+}
+
+impl Iterator for AddrInfo {
+    type Item = SocketAddr;
+    fn next(&mut self) -> Option<SocketAddr> {
+        if self.next.is_null() {
+            None
+        } else {
+            let next = unsafe { &*self.next };
+            let sockaddr = unsafe { *next.ai_addr };
+            let mut addr = SocketAddr::from_sockaddr(sockaddr);
+            addr.set_port(self.port);
+            self.next = next.ai_next;
+            Some(addr)
+        }
+    }
+}
+
+impl Drop for AddrInfo {
+    fn drop(&mut self) {
+        unsafe { FreeAddrInfoW(self.first as *mut _); }
     }
 }
