@@ -139,6 +139,7 @@ pub struct AddrInfo {
     port: u16,
 }
 
+#[allow(clippy::field_reassign_with_default)]
 pub fn lookup_host(addr: &str, port: u16) -> io::Result<AddrInfo> {
     let mut addrbuf = [0; 256];
     let c_addr = OsStr::from_str_with(addr, &mut addrbuf).unwrap();
