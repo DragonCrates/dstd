@@ -2,7 +2,7 @@ extern crate alloc;
 use alloc::borrow::Cow;
 use alloc::string::String;
 
-use crate::os_str::{OsChar, OsStr, OsStrError};
+use crate::os_str::{OsChar, OsStr, OsString, OsStrError};
 
 pub enum Path<'a> {
     Str(&'a str),
@@ -27,5 +27,17 @@ impl<'a> From<&'a str> for Path<'a> {
 impl<'a> From<&'a String> for Path<'a> {
     fn from(value: &'a String) -> Path<'a> {
         Path::Str(value.as_str())
+    }
+}
+
+impl<'a> From<&'a OsStr> for Path<'a> {
+    fn from(value: &'a OsStr) -> Path<'a> {
+        Path::OsStr(value)
+    }
+}
+
+impl<'a> From<&'a OsString> for Path<'a> {
+    fn from(value: &'a OsString) -> Path<'a> {
+        Path::OsStr(value.as_os_str())
     }
 }
