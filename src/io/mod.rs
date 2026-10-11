@@ -11,8 +11,6 @@ use error::Repr;
 pub trait Read {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
 
-    // TODO: read_buf
-
     fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {
         while !buf.is_empty() {
             let nr = self.read(buf)?;
@@ -24,13 +22,22 @@ pub trait Read {
 
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<()> {
         let mut init = buf.len();
-        loop {
-            buf.reserve(512);
-            buf.resize(buf.capacity(), 0);
 
-            match self.read(&mut buf[init..])? {
+        if buf.capacity() == 0 { buf.reserve(128); }
+        buf.resize(buf.capacity(), 0);
+
+        loop {
+            if init + buf.len()/8 >= buf.len() {
+                buf.resize(buf.capacity()*2, 0);
+            }
+
+            match self.read(&mut buf[init..]) {
                 Ok(nr) => {
-                    if nr == 0 { break; }
+                    if nr == 0 {
+                        buf.truncate(init);
+                        return Ok(())
+                    }
+
                     init += nr;
                 }
 
@@ -40,9 +47,6 @@ pub trait Read {
                 }
             }
         }
-
-        buf.truncate(init);
-        Ok(())
     }
 }
 
