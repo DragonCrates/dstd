@@ -23,7 +23,7 @@ pub trait Read {
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<()> {
         let mut init = buf.len();
 
-        if buf.capacity() == 0 { buf.reserve(128); }
+        if buf.capacity() < 128 { buf.reserve(128 - buf.len()); }
         buf.resize(buf.capacity(), 0);
 
         loop {
