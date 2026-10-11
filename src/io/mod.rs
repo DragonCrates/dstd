@@ -11,6 +11,8 @@ use error::Repr;
 pub trait Read {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
 
+    // TODO: read_buf
+
     fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {
         while !buf.is_empty() {
             let nr = self.read(buf)?;
@@ -21,18 +23,24 @@ pub trait Read {
     }
 
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<()> {
-        // TODO: improve this to write to uninitialized vec's area
         let mut init = buf.len();
-        if buf.capacity() == 0 { buf.reserve(512); }
-        buf.resize(buf.capacity(), 0);
         loop {
-            if init == buf.len() {
-                buf.resize(buf.capacity()*2, 0);
+            buf.reserve(512);
+            buf.resize(buf.capacity(), 0);
+
+            match self.read(&mut buf[init..])? {
+                Ok(nr) => {
+                    if nr == 0 { break; }
+                    init += nr;
+                }
+
+                Err(err) => {
+                    buf.truncate(init);
+                    return Err(err)
+                }
             }
-            let nr = self.read(&mut buf[init..])?;
-            if nr == 0 { break; }
-            init += nr;
         }
+
         buf.truncate(init);
         Ok(())
     }
