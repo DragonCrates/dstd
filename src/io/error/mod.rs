@@ -19,6 +19,10 @@ crate::block! {
 /// Raw OS error type. `c_int` on Linux and `DWORD` on Windows
 pub type RawError = sys::RawError;
 
+pub fn last_os_error() -> RawError {
+    sys::last_os_error()
+}
+
 /// The error of any I/O operations
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Error {
@@ -40,7 +44,7 @@ pub enum Repr {
 impl Error {
     /// Retrieves the last OS error
     pub fn last_os_error() -> Error {
-        Error { repr: Repr::Os(sys::last_os_error()) }
+        Error { repr: Repr::Os(last_os_error()) }
     }
 
     /// Constructs a new error from a raw OS error
