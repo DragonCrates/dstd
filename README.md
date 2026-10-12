@@ -3,7 +3,7 @@ Lightweight and feature-complete std replacement
 
 New types that do not exist in std:
 - `dstd::os_str::OsStr` represents a null-terminated C string in platform encoding, making it much easier to work with windows functions. Also, it is serializable, and is not opaque
-- `dstd::path::Path` is an enum that represents either &str or &OsStr. That is, you can now pass a real UTF-16 string to `File::open` without any conversion
+- `dstd::path::Path` is a trait for everything that can be converted to an &OsStr. That is, you can now pass a real UTF-16 string to `File::open` without any conversion
 - `dstd::time::TimeDelta` is a signed duration, almost equivalent to `struct timespec`. It can represent arbitrary points or differences in time
 - `dstd::time::FormatTime` represents a broken-down representation of `SystemTime`, suitable for human-readable output (`struct tm`/`SYSTEMTIME` in C)
 - `dstd::rand::RandomDevice` is a secure random source provided by the OS

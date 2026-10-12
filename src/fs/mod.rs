@@ -61,8 +61,7 @@ impl OpenOptions {
         self
     }
 
-    pub fn open<'a, P: Into<Path<'a>>>(&self, name: P) -> io::Result<File> {
-        let name = name.into();
+    pub fn open<P: Path>(&self, name: P) -> io::Result<File> {
         let mut buf = [0; 256];
         let name_os = name.to_os_with(&mut buf)?;
 
@@ -80,15 +79,15 @@ impl File {
         OpenOptions::new()
     }
 
-    pub fn create<'a, P: Into<Path<'a>>>(name: P) -> io::Result<File> {
+    pub fn create<P: Path>(name: P) -> io::Result<File> {
         File::options().write(true).create(true).truncate(true).open(name)
     }
 
-    pub fn create_new<'a, P: Into<Path<'a>>>(name: P) -> io::Result<File> {
+    pub fn create_new<P: Path>(name: P) -> io::Result<File> {
         File::options().write(true).create_new(true).open(name)
     }
 
-    pub fn open<'a, P: Into<Path<'a>>>(name: P) -> io::Result<File> {
+    pub fn open<P: Path>(name: P) -> io::Result<File> {
         File::options().read(true).open(name)
     }
 }
