@@ -65,6 +65,7 @@ pub fn os_to_errorkind(os: DWORD) -> ErrorKind {
     match os {
         wsa_errnos::WSAEINTR => ErrorKind::Interrupted,
         wsa_errnos::WSAEWOULDBLOCK => ErrorKind::WouldBlock,
+        // TODO: add other errors
         _ => ErrorKind::Other,
     }
 }
