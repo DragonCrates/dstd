@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::io::{self, Read, Write, Seek, SeekFrom};
 use crate::path::Path;
 
@@ -107,5 +109,11 @@ impl Write for File {
 impl Seek for File {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.file.seek(pos)
+    }
+}
+
+impl fmt::Debug for File {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.file.fmt(f)
     }
 }

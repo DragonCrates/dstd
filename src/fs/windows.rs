@@ -56,6 +56,7 @@ fn disposition(opts: &OpenOptions) -> DWORD {
 const FILE_SHARE_READ: DWORD = 0x00000001;
 const FILE_SHARE_WRITE: DWORD = 0x00000002;
 
+#[derive(Debug)]
 pub struct File {
     handle: HANDLE,
 }

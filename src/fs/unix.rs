@@ -24,6 +24,7 @@ fn opts_to_flags(opts: &OpenOptions) -> c_int {
     flags
 }
 
+#[derive(Debug)]
 pub struct File {
     fd: Fd,
 }
