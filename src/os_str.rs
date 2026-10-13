@@ -2,7 +2,7 @@ use core::slice;
 use core::fmt;
 use core::error::Error;
 use core::mem;
-use core::ops::Deref;
+use core::ops::{Deref, Index, IndexMut};
 
 extern crate alloc;
 use alloc::string::{FromUtf8Error, FromUtf16Error};
@@ -105,6 +105,11 @@ impl OsStr {
         &self.inner
     }
 
+    /// Returns `true` if `OsStr` is empty
+    pub fn is_empty(&self) -> bool {
+        self.inner.len() == 1
+    }
+
     /// Converts this `OsStr` into an owned [`OsString`]
     fn to_os_string(&self) -> OsString {
         unsafe { OsString::new_unchecked(self.inner.to_vec()) }
@@ -153,6 +158,13 @@ fn escape_to_utf8(s: &[u8]) -> String {
 impl fmt::Debug for OsStr {
     fn fmt(&self, _f: &mut fmt::Formatter) -> fmt::Result {
         todo!("stalled until wtf-8 encoder is implemented")
+    }
+}
+
+impl Index<usize> for OsStr {
+    type Output = OsChar;
+    fn index(&self, index: usize) -> &OsChar {
+        &self.inner[index]
     }
 }
 
@@ -235,7 +247,7 @@ fn from_str_with<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, O
     } else {
         let mut buf = vec![0; len];
         fill(&mut buf);
-        let os_string = OsString::new(buf)?;
+        let os_string = OsString::from_bytes(buf)?;
         Ok(Cow::Owned(os_string))
     }
 }
@@ -243,8 +255,11 @@ fn from_str_with<'a>(s: &str, buf: &'a mut [OsChar]) -> Result<Cow<'a, OsStr>, O
 /// An owned [`OsStr`]
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct OsString {
+    // invariant: this vector is allowed to be empty
     inner: Vec<OsChar>,
 }
+
+const EMPTY_OS_STR: &'static OsStr = unsafe { OsStr::new_unchecked(&[0]) };
 
 impl OsString {
     /// Constructs a new `OsString` from a given character vector
@@ -254,19 +269,71 @@ impl OsString {
         OsString { inner: v }
     }
 
+    /// Creates an empty `OsString`. This function does not allocate
+    pub const fn new() -> OsString {
+        OsString { inner: vec![] }
+    }
+
     /// Constructs a new `OsString` from a given character vector, additionally checking it for validity
     /// # Errors
     /// Returns error if string is not null terminated, or if it contains zeros other than null terminator
-    pub fn new(v: Vec<OsChar>) -> Result<OsString, OsStrError> {
-        // check
-        let _ = OsStr::new(&v)?;
+    pub fn from_bytes(v: Vec<OsChar>) -> Result<OsString, OsStrError> {
+        if !v.is_empty() {
+            // check
+            let _ = OsStr::new(&v)?;
+        }
         // valid, ok
         Ok(unsafe { OsString::new_unchecked(v) })
     }
 
     /// Converts this `OsString` into an `OsStr` reference
     pub fn as_os_str(&self) -> &OsStr {
-        unsafe { OsStr::new_unchecked(&self.inner) }
+        if self.is_empty() {
+            EMPTY_OS_STR
+        } else {
+            unsafe { OsStr::new_unchecked(&self.inner) }
+        }
+    }
+
+    /// Returns `true` if `OsString` is empty
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty() || self.inner[0] == 0
+    }
+
+    /// Appends a character
+    /// # Errors
+    /// Returns an error if `c == 0`
+    pub fn push(&mut self, c: OsChar) -> Result<(), OsStrError> {
+        if c == 0 {
+            Err(OsStrError::HasZeroes)
+        } else {
+            if let Some(zero) = self.inner.pop() {
+                debug_assert!(zero == 0, "corrupt OsString");
+            }
+            self.inner.push(c);
+            self.inner.push(0);
+            Ok(())
+        }
+    }
+
+    /// Appends a slice of [`OsChar`] values
+    /// # Errors
+    /// Returns an error if the slice contains interior nulls
+    pub fn push_bytes(&mut self, s: &[OsChar]) -> Result<(), OsStrError> {
+        // check nuls
+        for c in s {
+            if *c == 0 {
+                return Err(OsStrError::HasZeroes);
+            }
+        }
+        // remove nul
+        if let Some(zero) = self.inner.pop() {
+            debug_assert!(zero == 0, "corrupt OsString");
+        }
+        // push
+        self.inner.extend(s);
+        self.inner.push(0);
+        Ok(())
     }
 }
 
@@ -292,5 +359,18 @@ impl Deref for OsString {
 impl fmt::Debug for OsString {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.as_os_str().fmt(f)
+    }
+}
+
+impl Index<usize> for OsString {
+    type Output = OsChar;
+    fn index(&self, index: usize) -> &OsChar {
+        &self.inner[index]
+    }
+}
+
+impl IndexMut<usize> for OsString {
+    fn index_mut(&mut self, index: usize) -> &mut OsChar {
+        &mut self.inner[index]
     }
 }
