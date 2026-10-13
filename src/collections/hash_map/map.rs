@@ -556,6 +556,15 @@ impl<K: Hash + Eq, V> Extend<(K, V)> for HashMap<K, V> {
     }
 }
 
+impl<K: Hash + Eq, V, const N: usize> From<[(K, V); N]> for HashMap<K, V> {
+    /// Converts `[(K, V); N]` into `HashMap<K, V>`
+    fn from(arr: [(K, V); N]) -> HashMap<K, V> {
+        let mut map = HashMap::new();
+        map.extend(arr);
+        map
+    }
+}
+
 /// An iterator over the key-value pairs of a `HashMap`
 ///
 /// Created by [`HashMap::iter`]
