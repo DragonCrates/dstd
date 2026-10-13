@@ -73,6 +73,7 @@ crate::block! {
 #[macro_export]
 macro_rules! main {
     ($name:ident) => {
+        #[cfg(not(test))]
         mod __dstd_main {
             use core::panic::PanicInfo;
             use $crate::alloc::System;

@@ -1,8 +1,8 @@
 #![no_std]
+// To make tests work, you have to make the no_main attribute optional
 #![cfg_attr(not(test), no_main)]
 use dstd::prelude::*;
 
-#[cfg(not(test))]
 dstd::main!(main);
 fn main() {
     println!("This example supports `cargo test` with dstd");
