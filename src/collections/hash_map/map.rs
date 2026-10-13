@@ -15,7 +15,6 @@ use super::RandomState;
 /// A hash map implemented with linear probing and Robin-Hood hashing
 ///
 /// See the [module level](super) doc for more info
-#[derive(Default)]
 pub struct HashMap<K, V> {
     entries: Vec<Option<Entry<K, V>>>,
     len: usize,
@@ -67,6 +66,12 @@ impl<K, V> HashMap<K, V> {
             len: 0,
             hasher: RandomState::new(),
         }
+    }
+}
+
+impl<K, V> Default for HashMap<K, V> {
+    fn default() -> HashMap<K, V> {
+        HashMap::new()
     }
 }
 
