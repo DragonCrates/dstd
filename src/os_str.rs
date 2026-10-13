@@ -259,7 +259,7 @@ pub struct OsString {
     inner: Vec<OsChar>,
 }
 
-const EMPTY_OS_STR: &'static OsStr = unsafe { OsStr::new_unchecked(&[0]) };
+const EMPTY_OS_STR: &OsStr = unsafe { OsStr::new_unchecked(&[0]) };
 
 impl OsString {
     /// Constructs a new `OsString` from a given character vector
