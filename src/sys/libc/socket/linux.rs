@@ -24,5 +24,7 @@ pub const SOCK_CLOEXEC: c_int = fcntl::O_CLOEXEC;
 pub const SOCK_NONBLOCK: c_int = fcntl::O_NONBLOCK;
 
 pub const SOL_SOCKET: c_int = 1;
-
 pub const SO_REUSEADDR: c_int = 2;
+
+pub const SOL_IPV6: c_int = 41;
+pub const IPV6_V6ONLY: c_int = 26;

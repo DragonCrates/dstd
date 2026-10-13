@@ -27,6 +27,11 @@ impl UdpSocket {
         Ok(UdpSocket { socket })
     }
 
+    /// Sets `IPV6_V6ONLY` socket option
+    pub fn set_only_v6(&self, value: bool) -> io::Result<()> {
+        self.socket.set_only_v6(value)
+    }
+
     /// Binds the socket to the specified address.
     pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<UdpSocket> {
         for_each_addr(addr, |addr| {

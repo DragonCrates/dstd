@@ -35,7 +35,14 @@ impl Socket {
     /// This allows to quickly reuse released ports without getting EADDRINUSE
     fn set_reuseaddr(&self) -> io::Result<()> {
         let optval: i32 = 1;
-        let ret = unsafe { setsockopt(self.fd, SOL_SOCKET, SO_REUSEADDR, &optval as *const _ as *const c_void, 4) };
+        let ret = unsafe { setsockopt(self.fd, SOL_SOCKET, SO_REUSEADDR, &optval as *const i32 as *const c_void, 4) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(())
+    }
+
+    pub fn set_only_v6(&self, value: bool) -> io::Result<()> {
+        let optval = value as i32;
+        let ret = unsafe { setsockopt(self.fd, SOL_IPV6, IPV6_V6ONLY, &optval as *const i32 as *const c_void, 4) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(())
     }

@@ -26,6 +26,11 @@ impl TcpSocket {
         Ok(TcpSocket { socket })
     }
 
+    /// Sets `IPV6_V6ONLY` socket option
+    pub fn set_only_v6(&self, value: bool) -> io::Result<()> {
+        self.socket.set_only_v6(value)
+    }
+
     /// Binds the socket to a local address
     pub fn bind(&self, addr: SocketAddr) -> io::Result<()> {
         self.socket.bind(addr)
@@ -38,6 +43,7 @@ impl TcpSocket {
         Ok(TcpListener { socket })
     }
 
+    /// Connects this socket to `addr`, and returns [`TcpStream`]
     pub fn connect(self, addr: SocketAddr) -> io::Result<TcpStream> {
         self.socket.connect(addr)?;
         let socket = self.socket;

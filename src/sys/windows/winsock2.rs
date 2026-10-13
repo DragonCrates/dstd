@@ -99,6 +99,7 @@ unsafe extern "C" {
     pub fn recv(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int) -> c_int;
     pub fn recvfrom(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int, from: *mut sockaddr, fromlen: c_int) -> c_int;
     pub fn connect(s: SOCKET, name: *const sockaddr, namelen: c_int) -> c_int;
+    pub fn setsockopt(s: SOCKET, level: c_int, optname: c_int, optval: *const u8, optlen: c_int) -> c_int;
 }
 
 #[repr(C)]
@@ -114,3 +115,7 @@ pub struct ADDRINFOW {
     pub ai_next: *mut ADDRINFOW,
 }
 pub type PADDRINFOW = *mut ADDRINFOW;
+
+// ws2ipdef
+pub const IPPROTO_IPV6: c_int = 41;
+pub const IPV6_V6ONLY: c_int = 27;

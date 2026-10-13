@@ -56,6 +56,13 @@ impl Socket {
     }
 
     // TODO: everything below may be merged with unix part
+    pub fn set_only_v6(&self, value: bool) -> io::Result<()> {
+        let optval = value as i32;
+        let ret = unsafe { setsockopt(self.handle, IPPROTO_IPV6, IPV6_V6ONLY, &optval as *const i32 as *const u8, 4) };
+        if ret == -1 { return Err(Error::last_os_error()); }
+        Ok(())
+    }
+
     pub fn bind(&self, addr: SocketAddr) -> io::Result<()> {
         let sockaddr = addr.to_sockaddr();
         let ret = unsafe { bind(self.handle, &sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
