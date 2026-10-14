@@ -10,7 +10,7 @@ use crate::sys::libc::unistd::{read, write, lseek, close};
 pub type RawHandle = Fd;
 
 fn opts_to_flags(opts: &OpenOptions) -> c_int {
-    let mut flags = 0;
+    let mut flags = fcntl::O_CLOEXEC;
     match (opts.read, opts.write) {
         (false, false) => flags |= fcntl::O_RDONLY,
         (true, false) => flags |= fcntl::O_RDONLY,
