@@ -97,7 +97,7 @@ unsafe extern "C" {
     pub fn send(s: SOCKET, buf: *const u8, size: c_int, flags: c_int) -> c_int;
     pub fn sendto(s: SOCKET, buf: *const u8, size: c_int, flags: c_int, to: *const sockaddr, tolen: c_int) -> c_int;
     pub fn recv(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int) -> c_int;
-    pub fn recvfrom(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int, from: *mut sockaddr, fromlen: c_int) -> c_int;
+    pub fn recvfrom(s: SOCKET, buf: *mut u8, size: c_int, flags: c_int, from: *mut sockaddr, fromlen: *mut c_int) -> c_int;
     pub fn connect(s: SOCKET, name: *const sockaddr, namelen: c_int) -> c_int;
     pub fn setsockopt(s: SOCKET, level: c_int, optname: c_int, optval: *const u8, optlen: c_int) -> c_int;
 }

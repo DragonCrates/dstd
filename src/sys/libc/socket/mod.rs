@@ -17,7 +17,7 @@ unsafe extern "C" {
     pub fn send(sockfd: c_int, buf: *const u8, size: c_size_t, flags: c_int) -> c_ssize_t;
     pub fn sendto(sockfd: c_int, buf: *const u8, size: c_size_t, flags: c_int, dest_addr: *const sockaddr, addrlen: socklen_t) -> c_ssize_t;
     pub fn recv(sockfd: c_int, buf: *mut u8, size: c_size_t, flags: c_int) -> c_ssize_t;
-    pub fn recvfrom(sockfd: c_int, buf: *mut u8, size: c_size_t, flags: c_int, src_addr: *mut sockaddr, addrlen: socklen_t) -> c_ssize_t;
+    pub fn recvfrom(sockfd: c_int, buf: *mut u8, size: c_size_t, flags: c_int, src_addr: *mut sockaddr, addrlen: *mut socklen_t) -> c_ssize_t;
     pub fn setsockopt(sockfd: c_int, level: c_int, optname: c_int, optval: *const c_void, optlen: socklen_t) -> c_int;
     pub fn getaddrinfo(node: *const u8, service: *const u8, hints: *const addrinfo, res: *mut *mut addrinfo) -> c_int;
     pub fn freeaddrinfo(res: *mut addrinfo);

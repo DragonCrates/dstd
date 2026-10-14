@@ -118,7 +118,8 @@ impl Socket {
 
     pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
         let mut sockaddr = sockaddr::default();
-        let ret = unsafe { recvfrom(self.handle, buf.as_mut_ptr(), buf.len() as c_int, 0, &mut sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
+        let mut addrlen = mem::size_of::<sockaddr>() as c_int;
+        let ret = unsafe { recvfrom(self.handle, buf.as_mut_ptr(), buf.len() as c_int, 0, &mut sockaddr, &mut addrlen) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok((ret as usize, SocketAddr::from_sockaddr(sockaddr)))
     }
