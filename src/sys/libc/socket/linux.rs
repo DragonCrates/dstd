@@ -28,3 +28,5 @@ pub const SO_REUSEADDR: c_int = 2;
 
 pub const SOL_IPV6: c_int = 41;
 pub const IPV6_V6ONLY: c_int = 26;
+
+pub const MSG_NOSIGNAL: c_int = 0x4000;

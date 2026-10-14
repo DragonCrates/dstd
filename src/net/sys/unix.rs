@@ -78,21 +78,21 @@ impl Socket {
     }
 
     pub fn send(&self, buf: &[u8]) -> io::Result<usize> {
-        let ret = unsafe { send(self.fd, buf.as_ptr(), buf.len(), 0) };
+        // Future TODO: Presense of MSG_NOSIGNAL assumes Linux. FreeBSD and Mac OS need SO_NOSIGPIPE
+        let ret = unsafe { send(self.fd, buf.as_ptr(), buf.len(), MSG_NOSIGNAL) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
 
     pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
         let sockaddr = addr.to_sockaddr();
-        let ret = unsafe { sendto(self.fd, buf.as_ptr(), buf.len(), 0, &sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
+        let ret = unsafe { sendto(self.fd, buf.as_ptr(), buf.len(), MSG_NOSIGNAL, &sockaddr, mem::size_of::<sockaddr>() as socklen_t) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
 
     pub fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
-        // TODO MSG_NOSIGNAL
-        let ret = unsafe { recv(self.fd, buf.as_mut_ptr(), buf.len(), 0) };
+        let ret = unsafe { recv(self.fd, buf.as_mut_ptr(), buf.len(), MSG_NOSIGNAL) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
@@ -100,7 +100,7 @@ impl Socket {
     pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
         let mut sockaddr = sockaddr::default();
         let mut addrlen = mem::size_of::<sockaddr>() as socklen_t;
-        let ret = unsafe { recvfrom(self.fd, buf.as_mut_ptr(), buf.len(), 0, &mut sockaddr, &mut addrlen) };
+        let ret = unsafe { recvfrom(self.fd, buf.as_mut_ptr(), buf.len(), MSG_NOSIGNAL, &mut sockaddr, &mut addrlen) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok((ret as usize, SocketAddr::from_sockaddr(sockaddr)))
     }
