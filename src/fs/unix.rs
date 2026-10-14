@@ -1,4 +1,4 @@
-use core::ffi::c_int;
+use core::ffi::{c_int, c_void};
 
 use super::OpenOptions;
 use crate::io::{self, Error, Read, Write, Seek, SeekFrom};
@@ -40,7 +40,7 @@ impl File {
 
 impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let ret = unsafe { read(self.fd, buf.as_mut_ptr(), buf.len()) };
+        let ret = unsafe { read(self.fd, buf.as_mut_ptr() as *mut c_void, buf.len()) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
@@ -48,7 +48,7 @@ impl Read for File {
 
 impl Write for File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let ret = unsafe { write(self.fd, buf.as_ptr(), buf.len()) };
+        let ret = unsafe { write(self.fd, buf.as_ptr() as *const c_void, buf.len()) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }

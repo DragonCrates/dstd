@@ -1,4 +1,4 @@
-use core::ffi::c_int;
+use core::ffi::{c_int, c_void};
 
 use crate::io::{Result, Error, Read, Write};
 use crate::sys::libc::unistd::{read, write};
@@ -23,7 +23,7 @@ pub fn raw_stderr() -> RawStdio {
 
 impl Read for RawStdio {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let ret = unsafe { read(self.0, buf.as_mut_ptr(), buf.len()) };
+        let ret = unsafe { read(self.0, buf.as_mut_ptr() as *mut c_void, buf.len()) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }
@@ -31,7 +31,7 @@ impl Read for RawStdio {
 
 impl Write for RawStdio {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        let ret = unsafe { write(self.0, buf.as_ptr(), buf.len()) };
+        let ret = unsafe { write(self.0, buf.as_ptr() as *const c_void, buf.len()) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(ret as usize)
     }

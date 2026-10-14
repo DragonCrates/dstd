@@ -5,7 +5,6 @@ use core::ffi::c_int;
 pub type Fd = c_int;
 pub type c_ssize_t = isize;
 pub type c_size_t = usize;
-pub type c_off_t = i64;
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub mod errno {

@@ -1,13 +1,12 @@
-use core::ffi::c_int;
-use super::{c_size_t, c_ssize_t, c_off_t};
+use core::ffi::{c_int, c_void};
 
 unsafe extern "C" {
     /// Read from a file descriptor
-    pub fn read(fd: c_int, buf: *mut u8, count: c_size_t) -> c_ssize_t;
+    pub fn read(fd: c_int, buf: *mut c_void, count: usize) -> isize;
     /// Write to a file descriptor
-    pub fn write(fd: c_int, buf: *const u8, count: c_size_t) -> c_ssize_t;
+    pub fn write(fd: c_int, buf: *const c_void, count: usize) -> isize;
     /// Reposition read/write file offset
-    pub fn lseek(fd: c_int, offset: c_off_t, whence: c_int) -> c_off_t;
+    pub fn lseek(fd: c_int, offset: i64, whence: c_int) -> i64;
     /// Close a file descriptor
     pub fn close(fd: c_int) -> c_int;
 }
