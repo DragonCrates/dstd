@@ -48,10 +48,16 @@ fn print_internal(out: &mut impl Write, args: fmt::Arguments) {
     if let Some(s) = args.as_str() {
         let _ = out.write(s.as_bytes());
     } else {
-        let mut buf = BUF.lock();
-        buf.clear();
-        fmt::write(&mut *buf, args).expect("Display implementation returned an unexpected error");
-        let _ = out.write_all(buf.as_bytes());
+        // This probably requires a reentrant mutex, and we don't have one
+        if let Some(mut buf) = BUF.try_lock() {
+            buf.clear();
+            fmt::write(&mut *buf, args).expect("Display implementation returned an unexpected error");
+            let _ = out.write_all(buf.as_bytes());
+        } else {
+            let mut buf = String::new();
+            fmt::write(&mut buf, args).expect("Display implementation returned an unexpected error");
+            let _ = out.write_all(buf.as_bytes());
+        }
     }
 }
 
