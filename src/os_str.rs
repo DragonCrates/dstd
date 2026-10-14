@@ -2,7 +2,7 @@ use core::slice;
 use core::fmt;
 use core::error::Error;
 use core::mem;
-use core::ops::{Deref, Index, IndexMut};
+use core::ops::{Deref, Index};
 
 extern crate alloc;
 use alloc::string::{FromUtf8Error, FromUtf16Error};
@@ -105,6 +105,11 @@ impl OsStr {
         &self.inner
     }
 
+    /// Returns length **without the null terminator**
+    pub fn len(&self) -> usize {
+        self.inner.len() - 1
+    }
+
     /// Returns `true` if `OsStr` is empty
     pub fn is_empty(&self) -> bool {
         self.inner.len() == 1
@@ -164,7 +169,7 @@ impl fmt::Debug for OsStr {
 impl Index<usize> for OsStr {
     type Output = OsChar;
     fn index(&self, index: usize) -> &OsChar {
-        &self.inner[index]
+        &self.as_bytes()[index]
     }
 }
 
@@ -286,6 +291,11 @@ impl OsString {
         Ok(unsafe { OsString::new_unchecked(v) })
     }
 
+    /// Returns the internal vector holding the bytes
+    pub fn into_bytes(self) -> Vec<OsChar> {
+        self.inner
+    }
+
     /// Converts this `OsString` into an `OsStr` reference
     pub fn as_os_str(&self) -> &OsStr {
         if self.is_empty() {
@@ -293,11 +303,6 @@ impl OsString {
         } else {
             unsafe { OsStr::new_unchecked(&self.inner) }
         }
-    }
-
-    /// Returns `true` if `OsString` is empty
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty() || self.inner[0] == 0
     }
 
     /// Appends a character
@@ -359,18 +364,5 @@ impl Deref for OsString {
 impl fmt::Debug for OsString {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.as_os_str().fmt(f)
-    }
-}
-
-impl Index<usize> for OsString {
-    type Output = OsChar;
-    fn index(&self, index: usize) -> &OsChar {
-        &self.inner[index]
-    }
-}
-
-impl IndexMut<usize> for OsString {
-    fn index_mut(&mut self, index: usize) -> &mut OsChar {
-        &mut self.inner[index]
     }
 }
