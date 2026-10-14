@@ -1,6 +1,6 @@
 use super::minwindef::*;
 
-unsafe extern "C" {
+unsafe extern "system" {
     /// Creates or opens a file or I/O device.
     pub fn CreateFileW(
         /* [in] */ lpFileName: LPCWSTR,

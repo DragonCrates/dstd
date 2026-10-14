@@ -10,7 +10,7 @@ crate::block! {
     use core::ffi::c_int;
     use crate::sys::windows::minwindef::*;
 
-    unsafe extern "C" {
+    unsafe extern "system" {
         fn GetCommandLineW() -> LPWSTR;
         fn CommandLineToArgvW(
             /* [in] */ lpCmdLine: LPCWSTR,

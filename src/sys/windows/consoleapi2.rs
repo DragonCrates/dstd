@@ -12,7 +12,7 @@ pub struct CONSOLE_SCREEN_BUFFER_INFO {
 }
 pub type PCONSOLE_SCREEN_BUFFER_INFO = *mut CONSOLE_SCREEN_BUFFER_INFO;
 
-unsafe extern "C" {
+unsafe extern "system" {
     /// Sets the attributes of characters written to the console screen buffer by the WriteFile or WriteConsole function, or echoed by the ReadFile or ReadConsole function. This function affects text written after the function call.
     pub fn SetConsoleTextAttribute(
         /* _In_ */ hConsoleOutput: HANDLE,

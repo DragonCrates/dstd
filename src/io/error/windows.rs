@@ -10,7 +10,7 @@ use crate::sys::windows::wsa_errnos;
 
 use super::ErrorKind;
 
-unsafe extern "C" {
+unsafe extern "system" {
     /// Retrieves the calling thread's last-error code value.
     fn GetLastError() -> DWORD;
 }
@@ -21,7 +21,7 @@ pub fn last_os_error() -> RawError {
     unsafe { GetLastError() }
 }
 
-unsafe extern "C" {
+unsafe extern "system" {
     fn FormatMessageW(
         /* [in] */ dwFlags: DWORD,
         /* [in, optional] */ lpSource: LPCVOID,

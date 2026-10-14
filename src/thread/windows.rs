@@ -16,7 +16,7 @@ type LPTHREAD_START_ROUTINE = extern "C" fn(
     /* _In_ */ lpParameter: LPVOID,
 ) -> DWORD;
 
-unsafe extern "C" {
+unsafe extern "system" {
     fn CreateThread(
         /* [in, optional] */ lpThreadAttributes: LPSECURITY_ATTRIBUTES,
         /* [in] */ dwStackSize: SIZE_T,
@@ -90,7 +90,7 @@ struct SYSTEM_INFO {
 }
 type LPSYSTEM_INFO = *mut SYSTEM_INFO;
 
-unsafe extern "C" {
+unsafe extern "system" {
     fn GetSystemInfo(
         /* [out] */ lpSystemInfo: LPSYSTEM_INFO
     );

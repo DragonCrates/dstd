@@ -51,7 +51,7 @@ pub type LPWSADATA = *mut WSADATA;
 pub type GROUP = c_uint;
 pub type LPWSAPROTOCOL_INFOW = *mut c_void;
 
-unsafe extern "C" {
+unsafe extern "system" {
     pub fn WSAStartup(
         /* [in] */ wVersionRequired: WORD,
         /* [out] */ lpWSAData: LPWSADATA,
@@ -89,7 +89,7 @@ unsafe extern "C" {
 pub const WSA_FLAG_NO_HANDLE_INHERIT: DWORD = 0x80;
 pub const FIONBIO: c_ulong = 0x8004667e;
 
-unsafe extern "C" {
+unsafe extern "system" {
     //pub fn socket(domain: c_int, _type: c_int, protocol: c_int) -> SOCKET;
     pub fn bind(s: SOCKET, sockaddr: *const sockaddr, addrlen: socklen_t) -> c_int;
     pub fn listen(s: SOCKET, backlog: c_int) -> c_int;

@@ -27,7 +27,7 @@ pub type FutexWord = AtomicU32;
 pub type MiniFutex = AtomicU8;
 pub type MiniPrimitive = u8;
 
-unsafe extern "C" {
+unsafe extern "system" {
     /// Waits for the value at the specified address to change.
     fn WaitOnAddress(
         /* [in] */ Address: *mut /*volatile*/ VOID,

@@ -13,7 +13,7 @@ use crate::io::Error;
 // split into windows.rs and unix.rs
 
 #[cfg(windows)]
-unsafe extern "C" {
+unsafe extern "system" {
     /// The RtlGenRandom function generates a pseudo-random number
     #[link_name = "SystemFunction036"]
     fn RtlGenRandom(

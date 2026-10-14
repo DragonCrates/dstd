@@ -6,10 +6,10 @@ use crate::io::Error;
 pub type Key = DWORD;
 
 #[allow(nonstandard_style)]
-type PFLS_CALLBACK_FUNCTION = extern "C" fn(
+type PFLS_CALLBACK_FUNCTION = unsafe extern "system" fn(
     /* [in] */ lpFlsData: PVOID,
 );
-unsafe extern "C" {
+unsafe extern "system" {
     /// Allocates a fiber local storage (FLS) index
     fn FlsAlloc(
         /* [in] */ lpCallback: PFLS_CALLBACK_FUNCTION,
@@ -27,7 +27,7 @@ unsafe extern "C" {
 
 const FLS_OUT_OF_INDEXES: DWORD = 0xffffffff;
 
-pub fn tls_alloc(destructor: extern "C" fn(*mut c_void)) -> Key {
+pub fn tls_alloc(destructor: PFLS_CALLBACK_FUNCTION) -> Key {
     let ret = unsafe { FlsAlloc(destructor) };
     if ret == FLS_OUT_OF_INDEXES {
         panic!("FlsAlloc failed: {}", Error::last_os_error());

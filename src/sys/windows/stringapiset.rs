@@ -1,7 +1,7 @@
 use core::ffi::c_int;
 use super::minwindef::*;
 
-unsafe extern "C" {
+unsafe extern "system" {
     /// Maps a character string to a UTF-16 (wide character) string.
     pub fn MultiByteToWideChar(
         /* [in] */ CodePage: UINT,

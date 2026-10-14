@@ -1,4 +1,3 @@
-use core::ptr;
 use core::cell::{Cell, RefCell};
 use core::ffi::c_void;
 use core::marker::PhantomData;
@@ -41,10 +40,19 @@ pub struct LocalKey<T: 'static> {
     initializer: fn() -> T,
 }
 
-extern "C" fn destroy<T>(value: *mut c_void) {
+#[cfg(windows)]
+unsafe extern "system" fn destroy<T>(value: *mut c_void) {
+    unsafe { destroy_inner(value as *mut T); }
+}
+#[cfg(unix)]
+unsafe extern "C" fn destroy<T>(value: *mut c_void) {
+    unsafe { destroy_inner(value as *mut T); }
+}
+
+unsafe fn destroy_inner<T>(value: *mut T) {
     // No null pointer check because destructors only run for non null values
     unsafe {
-        ptr::drop_in_place(value as *mut T);
+        value.drop_in_place();
         System.dealloc(value as *mut u8, Layout::new::<T>());
     }
 }

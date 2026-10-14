@@ -7,7 +7,7 @@ use crate::sys::windows::minwinbase::*;
 use crate::sys::windows::corecrt::errno_t;
 use super::{time_t, Tm, TimeDelta};
 
-unsafe extern "C" {
+unsafe extern "system" {
     /// Retrieves the current value of the performance counter
     fn QueryPerformanceCounter(
         /* [out] */ lpPerformanceCount: *mut LARGE_INTEGER
@@ -121,7 +121,7 @@ pub fn localtime(time: time_t) -> Option<Tm> {
     }
 }
 
-unsafe extern "C" {
+unsafe extern "system" {
     fn Sleep(
         /* [in] */ dwMilliseconds: DWORD
     );

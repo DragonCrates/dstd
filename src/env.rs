@@ -19,7 +19,7 @@ crate::block! {
 }
 #[cfg(windows)]
 crate::block! {
-    unsafe extern "C" {
+    unsafe extern "system" {
         #[link_name = "_wgetenv"]
         fn getenv(name: *const u16) -> *mut u16;
         fn __p__wenviron() -> *const *const *const u16;
