@@ -23,10 +23,11 @@ pub trait AsRawSocket {
     fn from_raw_socket(socket: RawSocket) -> Self;
 }
 
-use crate::io::{self, Error};
+use crate::io::{self, Error, ErrorKind};
 
+const NO_ADDRESSES: Error = io::const_error!(ErrorKind::InvalidInput, "could not resolve to any addresses");
 fn for_each_addr<T>(addrs: impl ToSocketAddrs, mut f: impl FnMut(SocketAddr) -> io::Result<T>) -> io::Result<T> {
-    let mut last_error = Error::new_no_addresses();
+    let mut last_error = NO_ADDRESSES;
     for addr in addrs.to_socket_addrs()? {
         match f(addr) {
             Ok(ret) => return Ok(ret),

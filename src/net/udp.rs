@@ -1,10 +1,10 @@
 use core::net::SocketAddr;
 
 use crate::sys::addr::SocketAddrExt;
-use crate::io::{self, Error};
+use crate::io;
 
 use super::sys::{RawSocket, Socket, SOCK_DGRAM};
-use super::{AsRawSocket, ToSocketAddrs, for_each_addr};
+use super::{AsRawSocket, ToSocketAddrs, for_each_addr, NO_ADDRESSES};
 
 /// A UDP socket.
 ///
@@ -64,7 +64,7 @@ impl UdpSocket {
     pub fn send_to<A: ToSocketAddrs>(&self, buf: &[u8], addr: A) -> io::Result<usize> {
         let addr = match addr.to_socket_addrs()?.next() {
             Some(a) => a,
-            None => return Err(Error::new_no_addresses()),
+            None => return Err(NO_ADDRESSES),
         };
         self.socket.send_to(buf, addr)
     }

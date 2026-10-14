@@ -8,7 +8,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use alloc::string::String;
 
-use crate::io::{self, Error};
+use crate::io;
 use super::sys;
 
 /// A trait for objects which can be converted or resolved to one or more [`SocketAddr`] values
@@ -141,14 +141,12 @@ fn lookup_host_string(addr: &str) -> io::Result<vec::IntoIter<SocketAddr>> {
     // Split the string by ':' and convert the second part to u16...
     let (host, port_str) = match addr.rsplit_once(':') {
         Some(v) => v,
-        //return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid socket address"));
-        None => return Err(Error::new_no_addresses()),
+        None => return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid socket address")),
     };
 
     let port: u16 = match port_str.parse() {
         Ok(port) => port,
-        //return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid port value"));
-        Err(_) => return Err(Error::new_no_addresses()),
+        Err(_) => return Err(io::const_error!(io::ErrorKind::InvalidInput, "invalid port value")),
     };
 
     // ... and make the system look up the host.

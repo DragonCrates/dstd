@@ -6,7 +6,7 @@ use core::net::SocketAddr;
 use crate::sys::windows::minwindef::*;
 use crate::sys::windows::winsock2::*;
 use crate::sys::addr::{sockaddr, SocketAddrExt};
-use crate::io::{self, Error, Read, Write};
+use crate::io::{self, Error, ErrorKind, AiError, Read, Write};
 use crate::net::AsRawSocket;
 use crate::os_str::OsStr;
 
@@ -170,7 +170,7 @@ pub fn lookup_host(addr: &str, port: u16) -> io::Result<AddrInfo> {
     let hints = ADDRINFOW::default();
     let mut result = ptr::null_mut();
     let ret = unsafe { GetAddrInfoW(c_addr.as_ptr(), ptr::null(), &hints, &mut result) };
-    if ret != 0 { return Err(Error::new_addrinfo(ret)); }
+    if ret != 0 { return Err(Error::other(ErrorKind::AddrInfo, AiError(ret))); }
     Ok(AddrInfo {
         first: result,
         next: result,

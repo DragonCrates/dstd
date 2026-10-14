@@ -4,9 +4,8 @@ use alloc::vec::Vec;
 mod stdio;
 pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
 mod error;
+pub(crate) use error::{AiError, SimpleMessage, const_error};
 pub use error::{Result, Error, ErrorKind, RawError};
-
-use error::Repr;
 
 pub trait Read {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
@@ -14,7 +13,7 @@ pub trait Read {
     fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {
         while !buf.is_empty() {
             let nr = self.read(buf)?;
-            if nr == 0 { return Err(Error { repr: Repr::UnexpectedEof }); }
+            if nr == 0 { return Err(const_error!(ErrorKind::UnexpectedEof, "unexpected eof")); }
             buf = &mut buf[nr..];
         }
         Ok(())
@@ -56,7 +55,7 @@ pub trait Write {
     fn write_all(&mut self, mut buf: &[u8]) -> Result<()> {
         while !buf.is_empty() {
             let nw = self.write(buf)?;
-            if nw == 0 { return Err(Error { repr: Repr::WriteZero }); }
+            if nw == 0 { return Err(const_error!(ErrorKind::WriteZero, "write zero")); }
             buf = &buf[nw..];
         }
         Ok(())
