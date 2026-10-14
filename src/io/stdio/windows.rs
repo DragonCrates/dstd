@@ -45,7 +45,7 @@ impl Write for RawStdio {
         if ret != 0 {
             // Console
             let mut wstr = vec![0_u16; buf.len()];
-            let ret = unsafe { MultiByteToWideChar(
+            let wstr_len = unsafe { MultiByteToWideChar(
                 65001, // CodePage (CP_UTF8)
                 0, // dwFlags
                 buf.as_ptr() as LPCCH, // lpMultiByteStr
@@ -53,12 +53,12 @@ impl Write for RawStdio {
                 wstr.as_mut_ptr(), // lpWideCharStr
                 wstr.len() as c_int, // cchWideChR
             ) };
-            if ret == 0 { return Err(Error::last_os_error()); }
+            if wstr_len == 0 { return Err(Error::last_os_error()); }
             let mut nw: DWORD = 0;
             let ret = unsafe { WriteConsoleW(
                 handle, // hConsoleOutput
                 wstr.as_ptr() as LPCVOID, // lpBuffer
-                wstr.len() as DWORD, // nNumberOfCharsToWrite
+                wstr_len as DWORD, // nNumberOfCharsToWrite
                 &mut nw as LPDWORD, // lpNumberOfCharsWritten
                 ptr::null_mut(), // lpReserved
             ) };
