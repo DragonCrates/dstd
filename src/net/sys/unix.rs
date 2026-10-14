@@ -23,9 +23,7 @@ impl Socket {
     pub fn new(domain: c_int, socket_type: c_int) -> io::Result<Socket> {
         let fd = unsafe { socket(domain, socket_type | SOCK_CLOEXEC, 0) };
         if fd == -1 { return Err(Error::last_os_error()); }
-        let this = Socket { fd };
-        this.set_reuseaddr()?;
-        Ok(this)
+        Ok(Socket { fd })
     }
 
     pub fn new_nonblock(domain: c_int, socket_type: c_int) -> io::Result<Socket> {
@@ -33,8 +31,8 @@ impl Socket {
     }
 
     /// This allows to quickly reuse released ports without getting EADDRINUSE
-    fn set_reuseaddr(&self) -> io::Result<()> {
-        let optval: i32 = 1;
+    pub fn set_reuseaddr(&self, value: bool) -> io::Result<()> {
+        let optval = value as i32;
         let ret = unsafe { setsockopt(self.fd, SOL_SOCKET, SO_REUSEADDR, &optval as *const i32 as *const c_void, 4) };
         if ret == -1 { return Err(Error::last_os_error()); }
         Ok(())

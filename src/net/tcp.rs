@@ -26,6 +26,14 @@ impl TcpSocket {
         Ok(TcpSocket { socket })
     }
 
+    /// Sets `SO_REUSEADDR` socket option
+    /// # Availability
+    /// This function is not available on Windows because `SO_REUSEADDR` has different meaning on Windows
+    #[cfg(unix)]
+    pub fn set_reuseaddr(&self, value: bool) -> io::Result<()> {
+        self.socket.set_reuseaddr(value)
+    }
+
     /// Sets `IPV6_V6ONLY` socket option
     pub fn set_only_v6(&self, value: bool) -> io::Result<()> {
         self.socket.set_only_v6(value)
@@ -75,6 +83,8 @@ impl TcpListener {
     pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<TcpListener> {
         for_each_addr(addr, |addr| {
             let sock = TcpSocket::new(addr)?;
+            #[cfg(unix)]
+            sock.set_reuseaddr(true)?;
             sock.bind(addr)?;
             sock.listen()
         })
