@@ -76,7 +76,10 @@ impl Error {
     }
 
     /// Constructs an error from a custom error type
-    pub fn other<E: core::error::Error + 'static>(kind: ErrorKind, err: E) -> Error {
+    pub fn other<E>(kind: ErrorKind, err: E) -> Error
+    where
+        E: core::error::Error + Send + Sync + 'static
+    {
         let custom_data = CustomData {
             kind,
             err: Box::new(err),
@@ -120,8 +123,14 @@ pub(crate) struct SimpleMessage {
 struct Custom(NonNull<CustomData>);
 struct CustomData {
     kind: ErrorKind,
-    err: Box<dyn core::error::Error + 'static>,
+    err: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
+
+// SAFETY: all fields are Send + Sync
+unsafe impl Send for CustomData {}
+unsafe impl Sync for CustomData {}
+unsafe impl Send for Custom {}
+unsafe impl Sync for Custom {}
 
 impl Custom {
     fn get(&self) -> &CustomData {

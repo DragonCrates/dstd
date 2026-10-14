@@ -61,7 +61,19 @@ impl Repr {
 macro_rules! static_assert {
     ($cond:expr) => {
         const _: () = assert!($cond);
+    };
+
+    (@ $code:expr) => {
+        const _: () = $code;
     }
 }
 
 static_assert!(mem::align_of::<SimpleMessage>() >= 4);
+
+const fn assert_send<T: Send>() {}
+const fn assert_sync<T: Sync>() {}
+static_assert!(@ assert_send::<ErrorData>());
+static_assert!(@ assert_sync::<ErrorData>());
+// SAFETY: ErrorData is Send + Sync
+unsafe impl Send for Repr {}
+unsafe impl Sync for Repr {}
