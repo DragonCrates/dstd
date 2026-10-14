@@ -3,7 +3,7 @@ use core::ffi::c_void;
 use core::marker::PhantomData;
 
 extern crate alloc;
-use alloc::alloc::{Layout, GlobalAlloc};
+use alloc::alloc::{Layout, GlobalAlloc, handle_alloc_error};
 
 use crate::alloc::System;
 use crate::sync::OnceLock;
@@ -74,7 +74,9 @@ impl<T> LocalKey<T> {
         let value_ptr;
         let key = self.key();
         unsafe {
-            value_ptr = System.alloc(Layout::for_value(&value)) as *mut T;
+            let layout = Layout::new::<T>();
+            value_ptr = System.alloc(layout) as *mut T;
+            if value_ptr.is_null() { handle_alloc_error(layout); }
             value_ptr.write(value);
         }
         sys::tls_set_value(key, value_ptr as *mut c_void);
