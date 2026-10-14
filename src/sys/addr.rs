@@ -2,6 +2,8 @@
 
 use core::ffi::{c_int, c_ushort};
 use core::net::{SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr};
+use core::mem;
+use core::ptr;
 
 #[cfg(windows)]
 use crate::sys::windows::winsock2::{AF_INET, AF_INET6};
@@ -18,6 +20,22 @@ pub union sockaddr {
     pub storage: sockaddr_storage,
     pub _in: sockaddr_in,
     pub _in6: sockaddr_in6,
+}
+
+unsafe fn memcpy<T>(dst: *mut T, src: *const T, n: usize) {
+    unsafe {
+        ptr::copy_nonoverlapping(src as *const u8, dst as *mut u8, n);
+    }
+}
+
+impl sockaddr {
+    pub unsafe fn read_from(ptr: *const sockaddr, size: usize) -> sockaddr {
+        let mut this = sockaddr::default();
+        unsafe {
+            memcpy(&mut this, ptr, size);
+        }
+        this
+    }
 }
 
 #[repr(C)]
@@ -58,10 +76,7 @@ pub struct in6_addr {
 
 impl Default for sockaddr {
     fn default() -> sockaddr {
-        sockaddr {
-            // Initialize last field
-            _in6: sockaddr_in6::default()
-        }
+        unsafe { mem::zeroed() }
     }
 }
 

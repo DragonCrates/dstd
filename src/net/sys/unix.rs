@@ -171,7 +171,7 @@ impl Iterator for AddrInfo {
             None
         } else {
             let next = unsafe { &*self.next };
-            let sockaddr = unsafe { *next.ai_addr };
+            let sockaddr = unsafe { sockaddr::read_from(next.ai_addr, next.ai_addrlen as usize) };
             let mut addr = SocketAddr::from_sockaddr(sockaddr);
             addr.set_port(self.port);
             self.next = next.ai_next;
