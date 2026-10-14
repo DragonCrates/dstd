@@ -76,7 +76,9 @@ impl Error {
     }
 
     /// Constructs an error from a custom error type
-    pub fn other<E>(kind: ErrorKind, err: E) -> Error
+    ///
+    /// This function allocates on heap
+    pub fn new<E>(kind: ErrorKind, err: E) -> Error
     where
         E: core::error::Error + Send + Sync + 'static
     {
@@ -90,6 +92,14 @@ impl Error {
         let custom = Custom(custom_nonnull);
         let repr = Repr::new_custom(custom);
         Error { repr }
+    }
+
+    /// Shorthand for [`new`] with [`ErrorKind::Other`]
+    pub fn other<E>(err: E) -> Error
+    where
+        E: core::error::Error + Send + Sync + 'static
+    {
+        Error::new(ErrorKind::Other, err)
     }
 
     pub(crate) const fn from_const(msg: &'static SimpleMessage) -> Error {
