@@ -96,8 +96,8 @@ impl OsStr {
 
     /// Returns string contents without the null terminator
     pub fn as_bytes(&self) -> &[OsChar] {
-        let len = self.inner.len();
-        &self.inner[..len-1]
+        let len = self.len();
+        &self.inner[..len]
     }
 
     /// Returns full string contents
