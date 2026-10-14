@@ -52,7 +52,7 @@ pub struct JoinHandle<T> {
 impl<T> JoinHandle<T> {
     /// Wait for the associated thread to finish
     /// # Panics
-    /// This function panics if it can't retrieve thread's return value (meaning it did not finish), for example when it was cancelled by native code
+    /// This function panics if it can't retrieve thread's return value (meaning it did not finish), for example when it was cancelled by native code. In that case, drop the handle instead of joining it
     pub fn join(self) -> T {
         self.handle.join();
         let ret = unsafe { &mut *self.ret.get() };
