@@ -37,28 +37,28 @@ const FORMAT_MESSAGE_IGNORE_INSERTS: DWORD = 0x00000200;
 const FORMAT_MESSAGE_FROM_SYSTEM: DWORD = 0x00001000;
 
 pub fn strerror(error: DWORD) -> String {
-    let mut buf = [0 as WCHAR; 128];
+    let mut wstr = [0 as WCHAR; 128];
 
     let ret = unsafe { FormatMessageW(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         ptr::null(),
         error,
         0,
-        buf.as_mut_ptr(),
-        buf.len() as DWORD,
+        wstr.as_mut_ptr(),
+        wstr.len() as DWORD,
         ptr::null_mut(),
     ) };
 
-    if ret == 0 {
-        return format!("Unknown error {error}");
+    if ret == 0 { return format!("Unknown error {error}"); }
+    let mut wstr_len = ret as usize;
+
+    if wstr_len >= 2 {
+        if wstr[wstr_len-2] == b'\r' as u16 && wstr[wstr_len-1] == b'\n' as u16 {
+            wstr_len -= 2;
+        }
     }
 
-    let mut end = buf.iter().position(|&i| i == 0).expect("unterminated C string");
-    if buf[end-2] == b'\r' as u16 && buf[end-1] == b'\n' as u16 {
-        end -= 2;
-    }
-
-    String::from_utf16_lossy(&buf[..end])
+    String::from_utf16_lossy(&wstr[..wstr_len])
 }
 
 pub fn os_to_errorkind(os: DWORD) -> ErrorKind {
