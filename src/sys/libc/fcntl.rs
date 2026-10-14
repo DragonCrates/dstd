@@ -1,4 +1,4 @@
-use core::ffi::c_int;
+use core::ffi::{c_int , c_char};
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 crate::block! {
@@ -16,5 +16,5 @@ crate::block! {
 
 unsafe extern "C" {
     /// Open and possibly create a file
-    pub fn open(path: *const u8, flags: c_int, ...) -> c_int;
+    pub fn open(path: *const c_char, flags: c_int, ...) -> c_int;
 }

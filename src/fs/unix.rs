@@ -1,4 +1,4 @@
-use core::ffi::{c_int, c_void};
+use core::ffi::{c_int, c_char, c_void};
 
 use super::OpenOptions;
 use crate::io::{self, Error, Read, Write, Seek, SeekFrom};
@@ -32,7 +32,7 @@ pub struct File {
 impl File {
     pub fn open(name: &OsStr, opts: &OpenOptions) -> io::Result<File> {
         let flags = opts_to_flags(opts);
-        let fd = unsafe { open(name.as_ptr(), flags, 0o666) };
+        let fd = unsafe { open(name.as_ptr() as *const c_char, flags, 0o666) };
         if fd == -1 { return Err(Error::last_os_error()); }
         Ok(File { fd })
     }
