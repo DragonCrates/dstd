@@ -106,6 +106,7 @@ impl OsStr {
     }
 
     /// Returns length **without the null terminator**
+    #[allow(clippy::len_zero)]
     pub fn len(&self) -> usize {
         debug_assert!(self.inner.len() > 0);
         self.inner.len() - 1

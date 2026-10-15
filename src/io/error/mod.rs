@@ -108,6 +108,7 @@ impl Error {
 }
 
 impl Drop for Error {
+    #[allow(clippy::single_match)]
     fn drop(&mut self) {
         match self.repr.decode() {
             ErrorData::Custom(custom) => {
