@@ -15,7 +15,7 @@ use crate::sys::windows::handleapi::INVALID_HANDLE_VALUE;
 
 pub struct RawStdio(DWORD);
 
-pub fn raw_stdin() -> RawStdio {
+pub const fn raw_stdin() -> RawStdio {
     RawStdio(STD_INPUT_HANDLE)
 }
 

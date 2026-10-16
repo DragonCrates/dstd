@@ -9,7 +9,7 @@ const STDIN: c_int = 0;
 const STDOUT: c_int = 1;
 const STDERR: c_int = 2;
 
-pub fn raw_stdin() -> RawStdio {
+pub const fn raw_stdin() -> RawStdio {
     RawStdio(STDIN)
 }
 

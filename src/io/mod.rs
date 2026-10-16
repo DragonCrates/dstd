@@ -1,107 +1,18 @@
-extern crate alloc;
-use alloc::vec::Vec;
-
 mod stdio;
 pub use stdio::{Stdin, stdin, Stdout, stdout, Stderr, stderr};
+
 mod error;
 pub(crate) use error::{AiError, SimpleMessage, const_error};
 pub use error::{Result, Error, ErrorKind, RawError};
 
-pub trait Read {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
+mod read;
+pub use read::Read;
+mod write;
+pub use write::Write;
+mod seek;
+pub use seek::{Seek, SeekFrom};
 
-    fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {
-        while !buf.is_empty() {
-            let nr = self.read(buf)?;
-            if nr == 0 { return Err(const_error!(ErrorKind::UnexpectedEof, "failed to fill whole buffer")); }
-            buf = &mut buf[nr..];
-        }
-        Ok(())
-    }
+mod buf;
 
-    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<()> {
-        let mut init = buf.len();
-
-        if buf.capacity() < 128 { buf.reserve(128 - buf.len()); }
-        buf.resize(buf.capacity(), 0);
-
-        loop {
-            if init + buf.len()/8 >= buf.len() {
-                buf.resize(buf.capacity()*2, 0);
-            }
-
-            match self.read(&mut buf[init..]) {
-                Ok(nr) => {
-                    if nr == 0 {
-                        buf.truncate(init);
-                        return Ok(())
-                    }
-
-                    init += nr;
-                }
-
-                Err(err) => {
-                    buf.truncate(init);
-                    return Err(err)
-                }
-            }
-        }
-    }
-}
-
-pub trait Write {
-    fn write(&mut self, buf: &[u8]) -> Result<usize>;
-
-    fn write_all(&mut self, mut buf: &[u8]) -> Result<()> {
-        while !buf.is_empty() {
-            let nw = self.write(buf)?;
-            if nw == 0 { return Err(const_error!(ErrorKind::WriteZero, "failed to write whole buffer")); }
-            buf = &buf[nw..];
-        }
-        Ok(())
-    }
-}
-
-pub enum SeekFrom {
-    Start(u64),
-    Current(i64),
-    End(i64),
-}
-
-impl SeekFrom {
-    pub(crate) fn to_flags(&self) -> (i64, i32) {
-        match *self {
-            // FILE_BEGIN or SEEK_SET
-            SeekFrom::Start(off) => (off as i64, 0),
-            // FILE_CURRENT or SEEK_CUR
-            SeekFrom::Current(off) => (off, 1),
-            // FILE_END or SEEK_END
-            SeekFrom::End(off) => (off, 2),
-        }
-    }
-}
-
-pub trait Seek {
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64>;
-
-    fn rewind(&mut self) -> Result<()> {
-        self.seek(SeekFrom::Start(0))?;
-        Ok(())
-    }
-
-    fn stream_len(&mut self) -> Result<u64> {
-        let pos = self.seek(SeekFrom::Current(0))?;
-        let len = self.seek(SeekFrom::End(0))?;
-        self.seek(SeekFrom::Start(pos))?;
-        Ok(len)
-    }
- 
-    fn stream_position(&mut self) -> Result<u64> {
-        self.seek(SeekFrom::Current(0))
-    }
-
-    fn seek_relative(&mut self, offset: i64) -> Result<()> {
-        self.seek(SeekFrom::Current(offset))?;
-        Ok(())
-    }
-}
+mod buf_read;
+pub use buf_read::{BufRead, BufReader};

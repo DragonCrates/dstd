@@ -3,22 +3,21 @@ use core::fmt;
 extern crate alloc;
 use alloc::string::String;
 
-use crate::io::{Result, Read, Write};
+use crate::io::{Result, BufRead, Read, Write};
+use crate::io::buf::Stack;
+use crate::io::buf_read::BufReaderInner;
 use crate::sync::Mutex;
-
-mod buf;
-use buf::Buf;
 
 #[cfg(windows)]
 crate::block! {
     mod windows;
-    use windows::{raw_stdin, raw_stdout, raw_stderr};
+    use windows::{RawStdio, raw_stdin, raw_stdout, raw_stderr};
 }
 
 #[cfg(unix)]
 crate::block! {
     mod unix;
-    use unix::{raw_stdin, raw_stdout, raw_stderr};
+    use unix::{RawStdio, raw_stdin, raw_stdout, raw_stderr};
 }
 
 /// Returns a handle to the standard input of the current process
@@ -39,6 +38,32 @@ impl Stdin {
 impl Read for Stdin {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         BUFFERED_STDIN.lock().read(buf)
+    }
+}
+
+struct BufferedStdin(BufReaderInner<Stack, RawStdio>);
+static BUFFERED_STDIN: Mutex<BufferedStdin> = Mutex::new(BufferedStdin::new());
+
+impl BufferedStdin {
+    const fn new() -> BufferedStdin {
+        let inner = BufReaderInner::const_new(raw_stdin());
+        BufferedStdin(inner)
+    }
+}
+
+impl Read for BufferedStdin {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        self.0.read(buf)
+    }
+}
+
+impl BufRead for BufferedStdin {
+    fn fill_buf(&mut self) -> Result<&[u8]> {
+        self.0.fill_buf()
+    }
+
+    fn consume(&mut self, amt: usize) {
+        self.0.consume(amt);
     }
 }
 
@@ -90,76 +115,6 @@ impl Stderr {
 impl Write for Stderr {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
         raw_stderr().write(buf)
-    }
-}
-
-struct BufferedStdin {
-    buf: Buf<256>,
-}
-
-static BUFFERED_STDIN: Mutex<BufferedStdin> = Mutex::new(BufferedStdin { buf: Buf::new() });
-
-// TODO:
-// 1) does not handle partial utf-8 reads at all
-// 2) probably can be decoupled into BufRead
-impl BufferedStdin {
-    pub fn read_line(&mut self, buf: &mut String) -> Result<usize> {
-        let mut nw = 0;
-
-        // Try to empty buffer
-        if !self.buf.is_empty() {
-            if let Some(newline) = self.buf.iter().position(|&i| i == b'\n') {
-                buf.push_str(str::from_utf8(&self.buf[..newline+1])?);
-                nw += newline+1;
-                self.buf.consume(newline+1);
-                return Ok(nw);
-            } else {
-                buf.push_str(str::from_utf8(&self.buf)?);
-                nw += self.buf.buflen();
-                self.buf.clear();
-            }
-        }
-
-        loop {
-            // Fill buf
-            self.buf.resize(self.buf.maxlen());
-            let nr = raw_stdin().read(&mut self.buf[..])?;
-            if nr == 0 { return Ok(nw); }
-            self.buf.resize(nr);
-
-            // Try to find \n
-            if let Some(newline) = self.buf.iter().position(|&i| i == b'\n') {
-                buf.push_str(str::from_utf8(&self.buf[..newline+1])?);
-                nw += newline+1;
-                self.buf.consume(newline+1);
-                return Ok(nw);
-            } else {
-                buf.push_str(str::from_utf8(&self.buf)?);
-                nw += self.buf.buflen();
-                self.buf.clear();
-            }
-        }
-    }
-}
-
-impl Read for BufferedStdin {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let mut nw = 0;
-        // Empty buffer, if it had something
-        if !self.buf.is_empty() {
-            if buf.len() <= self.buf.buflen() {
-                buf.copy_from_slice(&self.buf[..buf.len()]);
-                self.buf.consume(buf.len());
-                return Ok(buf.len());
-            } else {
-                nw = self.buf.buflen();
-                buf[..nw].copy_from_slice(&self.buf);
-                self.buf.clear();
-            }
-        }
-        // Read leftover into the buffer
-        nw += raw_stdin().read(&mut buf[nw..])?;
-        Ok(nw)
     }
 }
 
