@@ -1,5 +1,6 @@
 use core::ffi::*;
 use super::minwindef::*;
+use super::winnt::*;
 use crate::sys::addr::sockaddr;
 
 pub const INVALID_SOCKET: SOCKET = -1_isize as SOCKET;

@@ -2,6 +2,7 @@
 
 pub mod minwindef;
 pub mod minwinbase;
+pub mod winnt;
 pub mod corecrt;
 pub mod handleapi;
 pub mod winsock2;

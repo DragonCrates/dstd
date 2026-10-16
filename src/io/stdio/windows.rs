@@ -6,6 +6,7 @@ use alloc::vec;
 
 use crate::io::{Result, Error, Read, Write};
 use crate::sys::windows::minwindef::*;
+use crate::sys::windows::winnt::*;
 use crate::sys::windows::winbase::*;
 use crate::sys::windows::fileapi::WriteFile;
 use crate::sys::windows::consoleapi::{GetConsoleMode, WriteConsoleW};

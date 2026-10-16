@@ -1,4 +1,5 @@
 use super::minwindef::*;
+use super::winnt::*;
 
 unsafe extern "system" {
     /// Creates or opens a file or I/O device.

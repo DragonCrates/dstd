@@ -1,5 +1,6 @@
 use core::ffi::c_int;
 use super::minwindef::*;
+use super::winnt::*;
 
 unsafe extern "system" {
     /// Maps a character string to a UTF-16 (wide character) string.

@@ -1,6 +1,6 @@
 use core::ffi::*;
 
-pub type BOOL = u8;
+pub type BOOL = c_int;
 pub type ULONG = c_ulong;
 pub type ULONG_PTR = usize;
 pub type SHORT = c_short;
@@ -15,12 +15,6 @@ pub type LPCVOID = *const VOID;
 pub type INT = c_int;
 pub type UINT = c_uint;
 pub type UINT_PTR = usize;
-pub type LPCCH = *const c_char;
-pub type PWSTR = *mut u16;
-pub type LPWSTR = *mut u16;
-pub type PCWSTR = *const u16;
-pub type LPCWSTR = *const u16;
-pub type WCHAR = u16;
 pub type SIZE_T = ULONG_PTR;
 pub type LARGE_INTEGER = i64;
 pub type PLARGE_INTEGER = *mut i64;
