@@ -143,21 +143,20 @@ impl<B: BufTrait, T: Read> Read for BufReaderInner<B, T> {
         self.fill_buf()?;
 
         if self.buf.is_empty() {
-            return Ok(0);
+            return Ok(nw);
         }
 
         let buf_space = buf.len() - nw;
         let to_write = buf_space.min(self.buf.len());
-        buf[nw..].copy_from_slice(&self.buf[..to_write]);
+        buf[nw..nw+to_write].copy_from_slice(&self.buf[..to_write]);
         self.buf.consume(to_write);
-
-        Ok(nw)
+        Ok(nw + to_write)
     }
 }
 
 impl<B: BufTrait, T: Read> BufRead for BufReaderInner<B, T> {
     fn fill_buf(&mut self) -> Result<&[u8]> {
-        if self.buf.get_fill().len() > 0 {
+        if self.buf.is_empty() {
             let nr = self.io.read(self.buf.get_fill())?;
             self.buf.extend(nr);
         }
@@ -167,5 +166,42 @@ impl<B: BufTrait, T: Read> BufRead for BufReaderInner<B, T> {
 
     fn consume(&mut self, amount: usize) {
         self.buf.consume(amount);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Reader that panics if `read` is called after `should_not_read` is set
+    struct GuardedReader {
+        data: Vec<u8>,
+        pos: usize,
+        should_not_read: bool,
+    }
+
+    impl Read for GuardedReader {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            assert!(!self.should_not_read, "read the underlying source despite buffered data");
+            let avail = &self.data[self.pos..];
+            let n = avail.len().min(buf.len());
+            buf[..n].copy_from_slice(&avail[..n]);
+            self.pos += n;
+            Ok(n)
+        }
+    }
+
+    /// fill_buf must return buffered data without touching the underlying
+    /// reader, otherwise it would block waiting for more input
+    #[test]
+    fn fill_buf_does_not_read_with_buffered_data() {
+        let mut br = BufReader::new(GuardedReader { data: b"abc\ndef\n".to_vec(), pos: 0, should_not_read: false });
+
+        assert_eq!(br.fill_buf().unwrap(), b"abc\ndef\n");
+
+        br.0.io.should_not_read = true;
+        br.consume(4);
+
+        assert_eq!(br.fill_buf().unwrap(), b"def\n");
     }
 }
