@@ -1,6 +1,11 @@
 use core::ffi::*;
 
 pub type BOOL = c_int;
+pub type LPBOOL = *mut BOOL;
+
+pub const FALSE: BOOL = 0;
+//pub const TRUE: BOOL = 1;
+
 pub type ULONG = c_ulong;
 pub type ULONG_PTR = usize;
 pub type SHORT = c_short;

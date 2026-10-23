@@ -9,6 +9,9 @@ use crate::env::ARGS;
 crate::block! {
     use core::ffi::c_int;
     use crate::sys::windows::winnt::*;
+    use crate::sys::windows::consoleapi::*;
+    use crate::sys::windows::winnls::CP_UTF8;
+    use crate::sys::windows::sysinfoapi::GetVersion;
 
     unsafe extern "system" {
         fn GetCommandLineW() -> LPWSTR;
@@ -18,6 +21,14 @@ crate::block! {
         ) -> *const LPWSTR;
     }
 
+    #[allow(non_snake_case)]
+    fn is_win7() -> bool {
+        let dwVersion = unsafe { GetVersion() };
+        let dwMajorVersion = dwVersion & 0x00FF;
+        let dwMinorVersion = (dwVersion & 0xFF00) >> 8;
+        dwMajorVersion <= 6 && dwMinorVersion <= 1
+    }
+
     /// Not a public api! Exposed only for the `main!` macro
     #[doc(hidden)]
     pub unsafe fn __init(_argc: i32, _argv: *const *const u8) {
@@ -25,6 +36,11 @@ crate::block! {
             let mut argc = 0;
             let argv = CommandLineToArgvW(GetCommandLineW(), &mut argc);
             ARGS = slice::from_raw_parts(argv as *const *const _, argc as usize);
+            if !is_win7() {
+                SetConsoleCP(CP_UTF8);
+                SetConsoleOutputCP(CP_UTF8);
+                crate::println!("Enabled UTF-8 console");
+            }
         }
     }
 }
@@ -87,11 +103,7 @@ macro_rules! main {
                 $crate::panic::handle_panic(info)
             }
 
-            #[unsafe(no_mangle)]
-            fn main(argc: i32, argv: *const *const u8) -> i32 {
-                unsafe { $crate::init::__init(argc, argv); }
-                super::$name().report()
-            }
+            $crate::init::__make_main!($name);
 
             // Never called with panic = "abort"
             #[unsafe(no_mangle)]
@@ -105,6 +117,38 @@ macro_rules! main {
     }
 }
 pub use main;
+
+/// Not a public api! Exposed only for the `main!` macro
+#[cfg(not(all(windows, feature = "no-crt")))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __make_main {
+    ($name:ident) => {
+        #[unsafe(no_mangle)]
+        unsafe extern "C" fn main(argc: i32, argv: *const *const u8) -> i32 {
+            unsafe { $crate::init::__init(argc, argv); }
+            super::$name().report()
+        }
+    }
+}
+
+/// Not a public api! Exposed only for the `main!` macro
+#[cfg(all(windows, feature = "no-crt"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __make_main {
+    ($name:ident) => {
+        #[unsafe(no_mangle)]
+        unsafe extern "C" fn mainCRTStartup() {
+            unsafe { $crate::init::__init(0, core::ptr::null()); }
+            let exit_code = super::$name().report();
+            $crate::process::exit(exit_code)
+        }
+    }
+}
+
+#[doc(hidden)]
+pub use __make_main;
 
 mod private {
     pub trait Sealed {}

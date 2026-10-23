@@ -1,0 +1,15 @@
+[package]
+name = "no-crt-example"
+version = "0.1.0"
+edition = "2024"
+
+description = "Example of building dstd without msvcrt/ucrt on windows"
+
+[dependencies]
+dstd = { version = "0.1.0", path = "../..", features = ["no-crt"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

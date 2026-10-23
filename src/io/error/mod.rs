@@ -94,7 +94,7 @@ impl Error {
         Error { repr }
     }
 
-    /// Shorthand for [`new`] with [`ErrorKind::Other`]
+    /// Shorthand for [`Error::new`] with [`ErrorKind::Other`]
     pub fn other<E>(err: E) -> Error
     where
         E: core::error::Error + Send + Sync + 'static

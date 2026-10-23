@@ -15,3 +15,6 @@ pub mod winuser;
 pub mod processenv;
 pub mod winbase;
 pub mod stringapiset;
+pub mod winnls;
+pub mod sysinfoapi;
+pub mod processthreadsapi;

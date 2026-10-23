@@ -9,3 +9,10 @@ description = "Lightweight std replacement"
 readme = "README.md"
 repository = "https://github.com/DragonCrates/dstd"
 keywords = ["no_std"]
+
+[features]
+# no-crt: enables building without ucrt
+# More info: examples/no-crt
+# Currently, it only changes `main` name to `mainCRTStartup`
+# Unless you know what is this, you would probably never use this
+no-crt = []

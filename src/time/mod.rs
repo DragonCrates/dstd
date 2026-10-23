@@ -107,6 +107,7 @@ impl SystemTime {
 /// Signed duration type, stores seconds as `i64`. It is very similar to `struct timespec`, and can losslessly represent one
 ///
 /// When using dstd, you should always prefer using it over [`core::time::Duration`]
+// TODO: proper debug implementation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimeDelta {
     secs: i64,
