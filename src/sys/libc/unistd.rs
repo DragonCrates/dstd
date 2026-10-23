@@ -9,4 +9,6 @@ unsafe extern "C" {
     pub fn lseek(fd: c_int, offset: i64, whence: c_int) -> i64;
     /// Close a file descriptor
     pub fn close(fd: c_int) -> c_int;
+    /// Exit terminates the current thread
+    pub fn exit(code: i32) -> !;
 }

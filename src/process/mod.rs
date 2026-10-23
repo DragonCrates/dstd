@@ -11,5 +11,5 @@ crate::block! {
 }
 
 pub fn exit(code: i32) -> ! {
-    unsafe { sys::exit(code) }
+    sys::exit(code)
 }
