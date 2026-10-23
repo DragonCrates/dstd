@@ -7,6 +7,7 @@ pub mod corecrt;
 pub mod handleapi;
 pub mod winsock2;
 pub mod wsa_errnos;
+pub mod fibersapi;
 pub mod fileapi;
 pub mod wincontypes;
 pub mod consoleapi;

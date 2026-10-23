@@ -1,31 +1,10 @@
 use core::ffi::c_void;
 
 use crate::sys::windows::minwindef::*;
+use crate::sys::windows::fibersapi::*;
 use crate::io::Error;
 
 pub type Key = DWORD;
-
-#[allow(nonstandard_style)]
-type PFLS_CALLBACK_FUNCTION = unsafe extern "system" fn(
-    /* [in] */ lpFlsData: PVOID,
-);
-unsafe extern "system" {
-    /// Allocates a fiber local storage (FLS) index
-    fn FlsAlloc(
-        /* [in] */ lpCallback: PFLS_CALLBACK_FUNCTION,
-    ) -> DWORD;
-    /// Retrieves the value in the calling fiber's FLS slot for the specified FLS index
-    fn FlsGetValue(
-        /* [in] */ dwFlsIndex: DWORD
-    ) -> PVOID;
-    /// Stores a value in the calling fiber's FLS slot for the specified FLS index
-    fn FlsSetValue(
-        /* [in] */ dwFlsIndex: DWORD,
-        /* [in, optional] */ lpFlsData: PVOID,
-    ) -> BOOL;
-}
-
-const FLS_OUT_OF_INDEXES: DWORD = 0xffffffff;
 
 pub fn tls_alloc(destructor: PFLS_CALLBACK_FUNCTION) -> Key {
     let ret = unsafe { FlsAlloc(destructor) };
