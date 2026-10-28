@@ -44,6 +44,7 @@ pub fn os_to_errorkind(os: RawError) -> ErrorKind {
         errno::EINTR => ErrorKind::Interrupted,
         // EAGAIN and EWOULDBLOCK are the same thing
         errno::EAGAIN | errno::EWOULDBLOCK => ErrorKind::WouldBlock,
+        errno::EISDIR => ErrorKind::IsADirectory,
         // TODO: add other errnos
         _ => ErrorKind::Other,
     }

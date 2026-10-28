@@ -50,6 +50,7 @@ impl_from_primitive! {
         Interrupted,
         WouldBlock,
         NotADirectory,
+        IsADirectory,
         TimedOut,
 
         AddrInfo,
@@ -84,6 +85,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::Interrupted => f.write_str("interrupted"),
             ErrorKind::WouldBlock => f.write_str("would block"),
             ErrorKind::NotADirectory => f.write_str("not a directory"),
+            ErrorKind::IsADirectory => f.write_str("is a directory"),
             ErrorKind::TimedOut => f.write_str("timed out"),
 
             ErrorKind::AddrInfo => f.write_str("getaddrinfo failed"),
