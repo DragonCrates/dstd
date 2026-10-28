@@ -56,7 +56,8 @@ impl Error {
     pub fn kind(&self) -> ErrorKind {
         match self.repr.decode() {
             ErrorData::Os(os) => sys::os_to_errorkind(os),
-            ErrorData::Message(msg) => msg.kind,
+            ErrorData::Simple(kind) => kind,
+            ErrorData::SimpleMessage(msg) => msg.kind,
             ErrorData::Custom(custom) => custom.get().kind,
         }
     }
@@ -73,6 +74,13 @@ impl Error {
             ErrorData::Os(err) => Some(err),
             _ => None,
         }
+    }
+
+    /// Constructs an error from an [`ErrorKind`]
+    ///
+    /// This function does not allocate on heap
+    pub const fn simple(kind: ErrorKind) -> Error {
+        Error { repr: Repr::new_simple(kind) }
     }
 
     /// Constructs an error from a custom error type
@@ -103,7 +111,7 @@ impl Error {
     }
 
     pub(crate) const fn from_const(msg: &'static SimpleMessage) -> Error {
-        Error { repr: Repr::new_simple(msg) }
+        Error { repr: Repr::new_simple_message(msg) }
     }
 }
 
@@ -122,7 +130,8 @@ impl Drop for Error {
 
 enum ErrorData {
     Os(RawError),
-    Message(&'static SimpleMessage),
+    Simple(ErrorKind),
+    SimpleMessage(&'static SimpleMessage),
     Custom(Custom),
 }
 
@@ -156,7 +165,10 @@ impl Debug for Error {
                 .field("code", &errno)
                 .field("msg", &sys::strerror(errno))
                 .finish(),
-            ErrorData::Message(msg) => f.debug_struct("Error")
+            ErrorData::Simple(kind) => f.debug_tuple("Kind")
+                .field(&kind)
+                .finish(),
+            ErrorData::SimpleMessage(msg) => f.debug_struct("Error")
                 .field("kind", &msg.kind)
                 .field("message", &msg.msg)
                 .finish(),
@@ -169,7 +181,8 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.repr.decode() {
             ErrorData::Os(errno) => f.write_str(&sys::strerror(errno)),
-            ErrorData::Message(msg) => f.write_str(msg.msg),
+            ErrorData::Simple(kind) => Display::fmt(&kind, f),
+            ErrorData::SimpleMessage(msg) => f.write_str(msg.msg),
             ErrorData::Custom(custom) => Display::fmt(&custom.get().err, f),
         }
     }
@@ -189,6 +202,12 @@ impl From<OsStrError> for Error {
             OsStrError::NotTerminated => const_error!(ErrorKind::InvalidData, "c string was not null terminated"),
             OsStrError::HasZeroes => const_error!(ErrorKind::InvalidData, "c string has zeroes before null terminator"),
         }
+    }
+}
+
+impl From<ErrorKind> for Error {
+    fn from(value: ErrorKind) -> Error {
+        Error::simple(value)
     }
 }
 

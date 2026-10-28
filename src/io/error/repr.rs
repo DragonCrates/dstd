@@ -1,14 +1,17 @@
 use core::mem;
 use core::ptr::NonNull;
+use core::num::NonZeroUsize;
 
-use super::{RawError, ErrorData, SimpleMessage, Custom, CustomData};
+use super::{RawError, ErrorKind, ErrorData, SimpleMessage, Custom, CustomData};
 
 pub struct Repr(NonNull<ErrorData>);
 
 const TAG_MASK: usize = 0b11;
-const TAG_OS: usize = 0b01;
-const TAG_SIMPLE: usize = 0b10;
-const TAG_CUSTOM: usize = 0b11;
+
+const TAG_SIMPLE_MESSAGE: usize = 0b00;
+const TAG_CUSTOM: usize = 0b01;
+const TAG_OS: usize = 0b10;
+const TAG_SIMPLE: usize = 0b11;
 
 impl Repr {
     pub fn new_os(os: RawError) -> Repr {
@@ -19,10 +22,16 @@ impl Repr {
         Repr(repr)
     }
 
-    pub const fn new_simple(msg: &'static SimpleMessage) -> Repr {
-        let ptr = msg as *const _ as *mut u8;
-        let tagged = ptr.wrapping_add(TAG_SIMPLE);
-        unsafe { Repr(NonNull::new_unchecked(tagged as *mut ErrorData)) }
+    pub const fn new_simple(kind: ErrorKind) -> Repr {
+        let tagged = ((kind as usize) << 2) | TAG_SIMPLE;
+        let nonzero = unsafe { NonZeroUsize::new_unchecked(tagged) };
+        let ptr = NonNull::without_provenance(nonzero);
+        Repr(ptr)
+    }
+
+    pub const fn new_simple_message(msg: &'static SimpleMessage) -> Repr {
+        // TAG_SIMPLE_MESSAGE is 0
+        unsafe { Repr(NonNull::new_unchecked(msg as *const _ as *mut ErrorData)) }
     }
 
     pub fn new_custom(custom: Custom) -> Repr {
@@ -40,10 +49,15 @@ impl Repr {
             }
 
             TAG_SIMPLE => {
-                let tagged = self.0.as_ptr() as *mut u8;
-                let ptr = tagged.wrapping_sub(TAG_SIMPLE) as *const SimpleMessage;
+                let kind = unsafe { ErrorKind::from_primitive(bits >> 2).unwrap_unchecked() };
+                ErrorData::Simple(kind)
+            }
+
+            TAG_SIMPLE_MESSAGE => {
+                // TAG_SIMPLE_MESSAGE is 0. No need to subtract
+                let ptr = self.0.cast::<SimpleMessage>().as_ptr();
                 let msg = unsafe { &*ptr };
-                ErrorData::Message(msg)
+                ErrorData::SimpleMessage(msg)
             }
 
             TAG_CUSTOM => {

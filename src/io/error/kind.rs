@@ -1,35 +1,60 @@
 use core::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ErrorKind {
-    // dstd errors
-    UnexpectedEof,
-    WriteZero,
-    InvalidInput,
-    InvalidData,
+macro_rules! impl_from_primitive {
+    (
+        $(#[$attr:meta])*
+        $v:vis enum $name:ident {
+            $($variant:ident),* $(,)?
+        }
+    ) => {
+        $(#[$attr])*
+        $v enum $name {
+            $($variant),*
+        }
 
-    NotFound,
-    PermissionDenied,
-    // network errors
-    ConnectionRefused,
-    ConnectionReset,
-    HostUnreachable,
-    NetworkUnreachable,
-    ConnectionAborted,
-    NotConnected,
-    AddrInUse,
-    AddrNotAvailable,
-    NetworkDown,
+        impl $name {
+            pub(crate) const fn from_primitive(n: usize) -> Option<$name> {
+                match n {
+                    $(v if v == $name::$variant as usize => Some($name::$variant),)*
+                    _ => None,
+                }
+            }
+        }
+    }
+}
 
-    BrokenPipe,
-    AlreadyExists,
-    Interrupted,
-    WouldBlock,
-    NotADirectory,
-    TimedOut,
+impl_from_primitive! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ErrorKind {
+        // dstd errors
+        UnexpectedEof,
+        WriteZero,
+        InvalidInput,
+        InvalidData,
 
-    AddrInfo,
-    Other,
+        NotFound,
+        PermissionDenied,
+        // network errors
+        ConnectionRefused,
+        ConnectionReset,
+        HostUnreachable,
+        NetworkUnreachable,
+        ConnectionAborted,
+        NotConnected,
+        AddrInUse,
+        AddrNotAvailable,
+        NetworkDown,
+
+        BrokenPipe,
+        AlreadyExists,
+        Interrupted,
+        WouldBlock,
+        NotADirectory,
+        TimedOut,
+
+        AddrInfo,
+        Other,
+    }
 }
 
 impl fmt::Display for ErrorKind {
