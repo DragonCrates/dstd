@@ -1,4 +1,5 @@
 use core::ffi::c_int;
+use crate::sys::addr::sockaddr;
 
 // Linux socklen_t
 #[cfg(target_os = "linux")]
@@ -30,3 +31,33 @@ pub const SOL_IPV6: c_int = 41;
 pub const IPV6_V6ONLY: c_int = 26;
 
 pub const MSG_NOSIGNAL: c_int = 0x4000;
+
+// Glibc addrinfo
+#[repr(C)]
+#[derive(Default)]
+#[cfg(target_os = "linux")]
+pub struct addrinfo {
+    pub ai_flags: c_int,
+    pub ai_family: c_int,
+    pub ai_socktype: c_int,
+    pub ai_protocol: c_int,
+    pub ai_addrlen: socklen_t,
+    pub ai_addr: *const sockaddr,
+    pub ai_canonname: *const u8,
+    pub ai_next: *const addrinfo,
+}
+
+// Bionic addrinfo
+#[repr(C)]
+#[derive(Default)]
+#[cfg(target_os = "android")]
+pub struct addrinfo {
+    pub ai_flags: c_int,
+    pub ai_family: c_int,
+    pub ai_socktype: c_int,
+    pub ai_protocol: c_int,
+    pub ai_addrlen: socklen_t,
+    pub ai_canonname: *const u8,
+    pub ai_addr: *const sockaddr,
+    pub ai_next: *const addrinfo,
+}

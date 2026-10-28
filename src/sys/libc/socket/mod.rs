@@ -24,24 +24,3 @@ unsafe extern "C" {
 }
 
 pub const SOMAXCONN: c_int = 128;
-
-#[repr(C)]
-#[derive(Default)]
-pub struct addrinfo {
-    /// Input flags
-    pub ai_flags: c_int,
-    /// Protocol family for socket
-    pub ai_family: c_int,
-    /// Socket type
-    pub ai_socktype: c_int,
-    /// Protocol for socket
-    pub ai_protocol: c_int,
-    /// Length of socket address
-    pub ai_addrlen: socklen_t,
-    /// Socket address for socket
-    pub ai_addr: *const sockaddr,
-    /// Canonical name for service location
-    pub ai_canonname: *const u8,
-    /// Pointer to next in list
-    pub ai_next: *const addrinfo,
-}
