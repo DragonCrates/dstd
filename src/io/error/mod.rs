@@ -222,3 +222,73 @@ macro_rules! const_error {
     }}
 }
 pub(crate) use const_error;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_from_error_kind() {
+        let e: Error = ErrorKind::NotFound.into();
+        assert_eq!(e.kind(), ErrorKind::NotFound);
+        assert_eq!(e.raw_os_error(), None);
+    }
+
+    #[test]
+    fn error_simple() {
+        let e = Error::simple(ErrorKind::PermissionDenied);
+        assert_eq!(e.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(e.raw_os_error(), None);
+    }
+
+    #[test]
+    fn error_from_raw_os_error() {
+        let e = Error::from_raw_os_error(0);
+        assert_eq!(e.raw_os_error(), Some(0));
+    }
+
+    #[test]
+    fn error_new_and_other() {
+        use alloc::string::ToString;
+
+        #[derive(Debug)]
+        struct MyErr(&'static str);
+        impl core::fmt::Display for MyErr {
+            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                f.write_str(self.0)
+            }
+        }
+        impl core::error::Error for MyErr {}
+
+        let e = Error::new(ErrorKind::Interrupted, MyErr("custom"));
+        assert_eq!(e.kind(), ErrorKind::Interrupted);
+        assert_eq!(e.raw_os_error(), None);
+        assert_eq!(e.to_string(), "custom");
+
+        let e2 = Error::other(MyErr("other"));
+        assert_eq!(e2.kind(), ErrorKind::Other);
+        assert_eq!(e2.raw_os_error(), None);
+        assert_eq!(e2.to_string(), "other");
+    }
+
+    #[test]
+    fn error_debug_display() {
+        use alloc::format;
+        let e = Error::simple(ErrorKind::NotFound);
+        let _ = format!("{:?}", e);
+        let _ = format!("{}", e);
+
+        let e2 = Error::from_raw_os_error(12345);
+        let _ = format!("{:?}", e2);
+        let _ = format!("{}", e2);
+    }
+
+    #[test]
+    #[allow(invalid_from_utf8)]
+    fn error_from_utf8_error() {
+        let bytes = [0xFF, 0xFE];
+        let err = core::str::from_utf8(&bytes).unwrap_err();
+        let e: Error = err.into();
+        assert_eq!(e.kind(), ErrorKind::InvalidData);
+    }
+}
