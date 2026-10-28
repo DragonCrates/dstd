@@ -291,4 +291,13 @@ mod tests {
         let e: Error = err.into();
         assert_eq!(e.kind(), ErrorKind::InvalidData);
     }
+
+    #[test]
+    fn test_const_error() {
+        use alloc::string::ToString;
+
+        let e = const_error!(ErrorKind::InvalidData, "error test");
+        assert_eq!(e.kind(), ErrorKind::InvalidData);
+        assert_eq!(e.to_string(), "error test");
+    }
 }
