@@ -77,9 +77,6 @@ crate::block! {
 /// [profile.release]
 /// # You have to disable panic unwinding because unwinding is not supported without std
 /// panic = "abort"
-/// # Other recommended options
-/// lto = "thin"
-/// strip = true
 /// ```
 /// Then, follow this example:
 /// ```ignore
